@@ -1,0 +1,220 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}J:\Rodrigo\EdeI\Archivos para entregar\Guía práctica para la evaluación de impacto\Regresión discontinua\xmpl.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 4 Feb 2011, 15:06:54
+{txt}- do "`1'"
+= do "xmpl"
+{err}{p 0 4}
+file xmpl.do
+not found
+{p_end}
+{txt}{hline 83} end doanl {hline}
+{search r(601):r(601);}
+
+{com}. do "C:\DOCUME~1\razuero\LOCALS~1\Temp\STD1r000000.tmp"
+{txt}
+{com}. clear 
+{txt}  {hline 79} begin clear {hline}
+  - if _caller() < 10 {c -(}
+    _clear_9 `0'
+    exit
+    {c )-}
+  - version 10
+  - syntax [anything]
+  - tokenize `anything'
+  = tokenize 
+  - if `"`2'"' != "" {c -(}
+  = if `""' != "" {c -(}
+    display as err "`2' not allowed"
+    exit 198
+    {c )-}
+  - if "`1'"=="" {c -(}
+  = if ""=="" {c -(}
+  - drop _all
+  - label drop _all
+    {hline 77} begin label {hline}
+    - version 10.0
+    - gettoken val : 0
+    - if (strpos("`val'", "val") > 0 ) {c -(}
+    = if (strpos("drop", "val") > 0 ) {c -(}
+      gettoken val 0 : 0
+      syntax anything [, nofix]
+      if "`fix'" != "" {c -(}
+      local fix ", nofix"
+      {c )-}
+      gettoken var rest : anything
+      while `"`rest'"' != "" {c -(}
+      gettoken lab rest : rest
+      local label "`lab'"
+      {c )-}
+      local vlist : list anything - lab
+      if "`lab'" == "." {c -(}
+      local lab ""
+      {c )-}
+      foreach var of varlist `vlist' {c -(}
+      _label `val' `var' `lab' `fix'
+      {c )-}
+      {c )-}
+    - else {c -(}
+    - _label `macval(0)'
+    = _label drop _all
+    - {c )-}
+    {hline 79} end label {hline}
+  - {c )-}
+  - else if "`1'"=="mata" {c -(}
+  = else if ""=="mata" {c -(}
+    mata: mata clear
+    {c )-}
+  - else if inlist("`1'", "results", "matrix") {c -(}
+  = else if inlist("", "results", "matrix") {c -(}
+    return clear
+    clearreturn
+    ereturn clear
+    sreturn clear
+    _return drop _all
+    if ("`1'" == "matrix") {c -(}
+    matrix drop _all
+    _est drop _all
+    {c )-}
+    {c )-}
+  - else if "`1'"=="programs" {c -(}
+  = else if ""=="programs" {c -(}
+    program drop _all
+    {c )-}
+  - else if "`1'"=="ado" {c -(}
+  = else if ""=="ado" {c -(}
+    program drop _allado
+    {c )-}
+  - else if "`1'"=="*" | "`1'"=="all" {c -(}
+  = else if ""=="*" | ""=="all" {c -(}
+    drop _all
+    label drop _all
+    matrix drop _all
+    scalar drop _all
+    constraint drop _all
+    eq drop _all
+    file close _all
+    postutil clear
+    _return drop _all
+    discard
+    program drop _all
+    timer clear
+    mata: mata clear
+    {c )-}
+  - else {c -(}
+    display as err "`1' not allowed"
+    exit 198
+    {c )-}
+  {hline 81} end clear {hline}
+
+{com}. input a b 
+
+     {txt}        a          b
+  1{com}. 1 2 
+{txt}  2{com}. 3 4 
+{txt}  3{com}. 5 6 
+{txt}  4{com}. end 
+{txt}
+{com}. summarize 
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+{space 11}a {c |}{res}         3           3           2          1          5
+{txt}{space 11}b {c |}{res}         3           4           2          2          6
+{txt}
+{com}. exit
+
+{txt}end of do-file
+
+
+{com}. set trace off
+
+. do "C:\DOCUME~1\razuero\LOCALS~1\Temp\STD1r000000.tmp"
+{txt}
+{com}. clear 
+{txt}
+{com}. input a b 
+
+     {txt}        a          b
+  1{com}. 1 2 
+{txt}  2{com}. 3 4 
+{txt}  3{com}. 5 6 
+{txt}  4{com}. end 
+{txt}
+{com}. summarize 
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+{space 11}a {c |}{res}         3           3           2          1          5
+{txt}{space 11}b {c |}{res}         3           4           2          2          6
+{txt}
+{com}. exit
+
+{txt}end of do-file
+
+
+{com}. do "C:\DOCUME~1\razuero\LOCALS~1\Temp\STD1r000000.tmp"
+{txt}
+{com}. J:\Rodrigo\Programación Stata
+{err}unrecognized command:  J
+{txt}{search r(199):r(199);}
+
+end of do-file
+
+{search r(199):r(199);}
+
+{com}. do "C:\DOCUME~1\razuero\LOCALS~1\Temp\STD1r000000.tmp"
+{txt}
+{com}. cd "J:\Rodrigo\Programación Stata"
+{res}J:\Rodrigo\Programación Stata
+{txt}
+{com}. 
+. set trace off
+{txt}
+{com}. 
+. cap program drop doanl
+{txt}
+{com}. program doanl 
+{txt}  1{com}.      capture log close 
+{txt}  2{com}.      set more off 
+{txt}  3{com}.      log using "`1'", replace 
+{txt}  4{com}.      do "`1'" 
+{txt}  5{com}.      log close 
+{txt}  6{com}. end
+{txt}
+{com}. 
+. 
+. 
+. 
+. 
+{txt}end of do-file
+
+{com}. do "C:\DOCUME~1\razuero\LOCALS~1\Temp\STD1r000000.tmp"
+{txt}
+{com}. clear 
+{txt}
+{com}. input a b 
+
+     {txt}        a          b
+  1{com}. 1 2 
+{txt}  2{com}. 3 4 
+{txt}  3{com}. 5 6 
+{txt}  4{com}. end 
+{txt}
+{com}. summarize 
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+{space 11}a {c |}{res}         3           3           2          1          5
+{txt}{space 11}b {c |}{res}         3           4           2          2          6
+{txt}
+{com}. exit
+
+{txt}end of do-file
+
+
+{com}. doanl xmpl
+{smcl}
+{com}{sf}{ul off}

@@ -1,0 +1,198 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+       log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Diferencias en diferencias\Datos panel\panel_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}31 Aug 2009, 17:51:30
+
+{com}. do "C:\Users\Rodrigo\AppData\Local\Temp\STD0h000000.tmp"
+{txt}
+{com}.                           *------------------------------------------------------------------------------------*
+.                                   *-------------------------    Diferencias en diferencias    -------------------------*
+.                                   *------------------------------------------------------------------------------------*
+. 
+.                                                                             *    Datos Panel      *
+. 
+. *--------------------------------------------------------------------------------------------------------------------------------------------*
+. *Lo primero que debemos hacer es abrir la base de datos del modelo de diferencias:
+. 
+. *Esta base de datos cuenta con información para 4.000 individuos. Para cada individuo, tenemos información de dos periodos. El subíndice de cada
+. *variable corresponde al periodo de observación. Por ejemplo "ha_nchs2" indica el ingreso mensual, en decenas de miles de pesos
+. *del jefe del hogar en el periodo 2. 
+. *--------------------------------------------------------------------------------------------------------------------------------------------*
+. 
+. 
+. 
+. *-------------------------------------------*
+. *1. Veamos algunas estadísticas descriptivas*
+. *-------------------------------------------*
+. 
+. 
+. *Talla para la edad de los individuos del grupo de tratamiento en el primer periodo
+. sum ha_nchs1 if D==1
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+    ha_nchs1 {c |}{res}      2000   -.6786743    1.265438  -5.919884   5.874913
+{txt}
+{com}. 
+. *Talla para la edad de los individuos del grupo de control en el primer periodo
+. sum ha_nchs1 if D==0
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+    ha_nchs1 {c |}{res}      2000   -.7790041    1.264368  -5.585266   6.061383
+{txt}
+{com}. 
+. *Talla para la edad de los individuos del grupo de tratamiento en el segundo periodo
+. sum ha_nchs2 if D==1
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+    ha_nchs2 {c |}{res}      2000   -.2787444    1.293322   -5.45469   5.736451
+{txt}
+{com}. 
+. *Talla para la edad de los individuos del grupo de control en el segundo periodo
+. sum ha_nchs2 if D==0
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+    ha_nchs2 {c |}{res}      2000   -.5812385     1.29934  -5.159187   6.333417
+{txt}
+{com}. 
+. **** Aparentemente, existe una diferencia entre los individuos de tratamiento y de control en el primer periodo en lo referente
+. **** a la variable talla para la edad "ha_nchs. Además, esta diferencia se incrementa en el tiempo.
+. 
+. **** Haciendo una prueba de diferencia de medias, podemos ver que en los dos periodos hay una diferencia estadísticamente significativa
+. **** que es mayor en el segundo periodo:
+. 
+. ttest ha_nchs1, by(D)
+
+{txt}Two-sample t test with equal variances
+{hline 9}{c TT}{hline 68}
+   Group{col 10}{c |}{col 16}Obs{col 27}Mean{col 35}Std. Err.{col 47}Std. Dev.{col 59}[95% Conf. Interval]
+{hline 9}{c +}{hline 68}
+       0 {c |}{res}{col 12}   2000{col 22}-.7790041{col 34} .0282721{col 46} 1.264368{col 58}  -.83445{col 70}-.7235582
+       {txt}1 {c |}{res}{col 12}   2000{col 22}-.6786743{col 34} .0282961{col 46} 1.265438{col 58}-.7341672{col 70}-.6231815
+{txt}{hline 9}{c +}{hline 68}
+combined {c |}{res}{col 12}   4000{col 22}-.7288392{col 34} .0200131{col 46}  1.26574{col 58} -.768076{col 70}-.6896024
+{txt}{hline 9}{c +}{hline 68}
+    diff {c |}{res}{col 22}-.1003298{col 34} .0399998{col 58}-.1787516{col 70}-.0219079
+{txt}{hline 9}{c BT}{hline 68}
+    diff = mean({res}0{txt}) - mean({res}1{txt})                                      t = {res} -2.5083
+{txt}Ho: diff = 0                                     degrees of freedom = {res}    3998
+
+    {txt}Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = {res}0.0061         {txt}Pr(|T| > |t|) = {res}0.0122          {txt}Pr(T > t) = {res}0.9939
+{txt}
+{com}. 
+. ttest ha_nchs2, by(D)
+
+{txt}Two-sample t test with equal variances
+{hline 9}{c TT}{hline 68}
+   Group{col 10}{c |}{col 16}Obs{col 27}Mean{col 35}Std. Err.{col 47}Std. Dev.{col 59}[95% Conf. Interval]
+{hline 9}{c +}{hline 68}
+       0 {c |}{res}{col 12}   2000{col 22}-.5812385{col 34} .0290541{col 46}  1.29934{col 58} -.638218{col 70}-.5242589
+       {txt}1 {c |}{res}{col 12}   2000{col 22}-.2787444{col 34} .0289196{col 46} 1.293322{col 58}  -.33546{col 70}-.2220287
+{txt}{hline 9}{c +}{hline 68}
+combined {c |}{res}{col 12}   4000{col 22}-.4299914{col 34} .0206334{col 46}  1.30497{col 58}-.4704443{col 70}-.3895385
+{txt}{hline 9}{c +}{hline 68}
+    diff {c |}{res}{col 22}-.3024941{col 34} .0409937{col 58}-.3828646{col 70}-.2221236
+{txt}{hline 9}{c BT}{hline 68}
+    diff = mean({res}0{txt}) - mean({res}1{txt})                                      t = {res} -7.3790
+{txt}Ho: diff = 0                                     degrees of freedom = {res}    3998
+
+    {txt}Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = {res}0.0000         {txt}Pr(|T| > |t|) = {res}0.0000          {txt}Pr(T > t) = {res}1.0000
+{txt}
+{com}. 
+. **** Mientras que en el primer periodo la diferencia es de 0.1, para el segundo se incrementa hasta 0.3. 
+. 
+. 
+. *--------------------------------------------------------*
+. *2. Modelo de diferencias en diferencias con datos panel *
+. *--------------------------------------------------------*
+. 
+. 
+. **** Al ver las estadísticas descriptivas de la variable talla para la edad y desnutrición crónica
+. **** vemos que en realidad hay una diferencia preexistente entre los individuos pertenecientes al grupo de tratamiento
+. **** y al grupo de control. En el periodo después de aplicar el tratamiento es posible que la diferencia entre los dos grupos
+. **** se deba a la diferencia preexistente o a la aplicación del tratamiento. El modelo de diferencias en diferencias nos
+. **** permite controlar por diferencias existentes antes de la aplicación del programa. 
+. 
+. **** Para correr el modelo básico de diferencias en diferencias, utilizando una base de datos panel, 
+. **** utilizamos como variable dependiente el cambio en la talla para la edad en función del tratamiento. 
+. **** Primero debemos generar la variable "delta_ha_nchs" y después si podemos correr el programa:
+. 
+. gen delta_ha_nchs=ha_nchs2-ha_nchs1
+{txt}
+{com}. 
+. 
+. reg delta_ha_nchs D
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  1,  3998) ={res}  450.77
+    {txt}   Model {char |} {res} 40.8704296     1  40.8704296           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 362.492281  3998  .090668404           {txt}R-squared     = {res} 0.1013
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.1011
+    {txt}   Total {char |} {res} 403.362711  3999  .100865894           {txt}Root MSE      = {res} .30111
+
+{txt}{hline 13}{c TT}{hline 64}
+delta_ha_n~s {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .2021644    .009522    21.23   0.000     .1834959    .2208328
+{txt}       _cons {c |}  {res} .1977656   .0067331    29.37   0.000      .184565    .2109662
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. 
+. **** El coeficiente asociado a la variable "D" tiene una magnitud de 0.2 y es significativo. 
+. **** Esto nos indica que la diferencia de talla para la edad entre los individuos de tratamiento y
+. **** control se incrementa en 0.2 por la aplicación del tratamiento. 
+. 
+. *------------------------------------------------------------------------------------------*
+. *3. Modelo de diferencias en diferencias con datos panel utilizando regresores adicionales *
+. *------------------------------------------------------------------------------------------*
+. 
+. 
+. **** Podemos suponer que el crecimiento en la variable talla para la edad, además de deberse al tratamiento y 
+. **** al crecimiento natural en el tiempo, puede tener su origen en características de los individuos. 
+. **** Por ejemplo, resulta razonable suponer que el crecimiento en la talla para la edad de un individuo
+. **** también está asociado al ingreso en el primer periodo del jefe del hogar. En este punto verificamos esta hipótesis
+. **** con los ingresos del jefe de hogar y la educación del jefe de hogar. 
+. 
+. 
+. 
+. reg delta_ha_nchs D ingresos_hogar_jefe1 educa_jefe1 ingresos_hogar_jefe2 educa_jefe2
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  5,  3994) ={res} 1335.34
+    {txt}   Model {char |} {res} 252.385721     5  50.4771442           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res}  150.97699  3994  .037800949           {txt}R-squared     = {res} 0.6257
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.6252
+    {txt}   Total {char |} {res} 403.362711  3999  .100865894           {txt}Root MSE      = {res} .19442
+
+{txt}{hline 13}{c TT}{hline 64}
+delta_ha_n~s {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .0771181    .006429    12.00   0.000     .0645136    .0897225
+{txt}ingresos_h~1 {c |}  {res}  .078656   .0010516    74.79   0.000     .0765942    .0807178
+{txt} educa_jefe1 {c |}  {res} .0136727    .018503     0.74   0.460    -.0226035    .0499489
+{txt}ingresos_h~2 {c |}  {res}-.0786525   .0010527   -74.72   0.000    -.0807163   -.0765887
+{txt} educa_jefe2 {c |}  {res}-.0145574     .01849    -0.79   0.431    -.0508081    .0216933
+{txt}       _cons {c |}  {res} .0871868   .0071875    12.13   0.000     .0730953    .1012783
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Vemos que en realidad la única variable significativa en esta regresión es el coeficiente asociado a "D"
+. **** No podemos decir entonces que un incremento en los ingresos del jefe de hogar ni en su nivel educativo
+. **** tienen un efecto sobre el crecimiento de la talla para la edad (ha_nchs).
+. 
+{txt}end of do-file
+
+{com}. log close
+       {txt}log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Diferencias en diferencias\Datos panel\panel_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}31 Aug 2009, 17:51:40
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

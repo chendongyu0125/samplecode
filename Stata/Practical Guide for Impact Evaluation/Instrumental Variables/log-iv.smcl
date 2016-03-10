@@ -1,0 +1,1590 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+       log:  {res}F:\EdeI\IV\Diciembre 28\log-iv.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}28 Dec 2009, 12:08:01
+
+{com}. do "C:\Users\Rodrigo\AppData\Local\Temp\STD0l000000.tmp"
+{txt}
+{com}. *-----------------------------------*
+. *    Variables instrumentales       *
+. *-----------------------------------*
+. 
+. *----------------------------------------------------------------------------------------------------------------*
+. *En el capítulo de variables instrumentales se utilizará el comando "ivreg2". Dado que este comando no viene
+. *incluido en el paquete básico de Stata, es necesario instalarlo. Para instalarlo debemos seleccionar 
+. *la pestaña "help" de Stata, en la opción search y seleccionamos
+. *search all. Buscamos "ivreg2" y seleccionamos el paquete st0030_2 para instalarlo. 
+. *----------------------------------------------------------------------------------------------------------------*
+. 
+. **** Para simplificar el análisis definimos un vector global con las variables que se han utilizado antes:
+. 
+. global X "personas orden_n ocupado_jefe educa_jefe ingresos_hogar_jefe"
+{txt}
+{com}. 
+. **** Cuando un regresor tiene alguna relación con el término de error, se viola uno de los supuestos básicos
+. **** de MCO y por lo tanto, estimaciones mediante este método arrojarían resultados sesgados. En nuestro
+. **** ejemplo, el tratamiento puede estar relacionado con variables no observables como el nivel de preocupación
+. **** de una madre frente a su hijo o el conocimiento que ésta tiene sobre el desarrollo adecuado de los niños.
+. 
+. **** Veamos los resultados de una estimación simple por MCO:
+. 
+. reg ha_nchs D $X
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  6,  3993) ={res}   39.49
+    {txt}   Model {char |} {res} 68.9063178     6  11.4843863           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 1161.23317  3993  .290817222           {txt}R-squared     = {res} 0.0560
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0546
+    {txt}   Total {char |} {res} 1230.13949  3999  .307611775           {txt}Root MSE      = {res} .53927
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .2489481   .0171935    14.48   0.000     .2152392     .282657
+{txt}    personas {c |}  {res}-.0093891    .004544    -2.07   0.039     -.018298   -.0004802
+{txt}     orden_n {c |}  {res}-.0632222   .0263134    -2.40   0.016    -.1148111   -.0116333
+{txt}ocupado_jefe {c |}  {res}-.0364222   .0223229    -1.63   0.103    -.0801875    .0073431
+{txt}  educa_jefe {c |}  {res}  .005974    .002325     2.57   0.010     .0014157    .0105322
+{txt}ingresos_h~e {c |}  {res} .0001628    .000101     1.61   0.107    -.0000353    .0003609
+{txt}       _cons {c |}  {res}-.0840199   .0452452    -1.86   0.063    -.1727257     .004686
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Los resultados nos indican que el tratamiento tiene un efecto de 0.248 en la talla para la edad
+. **** de los individuos. Sin embargo, dado el problema de autoselección, este resultado puede estar sesgado. 
+. **** Para proceder a utilizar la metodología de variables instrumentales debemos seleccionar instrumentos
+. **** que sean relevantes y exógenos. En principio, el número de oficinas operadoras en el municipio determina
+. **** en cierta medida la probabilidad de participación sin tener relación con las variables no observables. 
+. **** Lo mismo sucede con la distancia del hogar a la oficina operadora más cercana. Antes de utilizar
+. **** estos instrumentos realizamos pruebas de relevancia y exogeneidad:
+. 
+. *------------------*
+. * 1. Relevancia    *
+. *------------------*
+. 
+. **** Para evaluar la relevancia de un instrumento se pueden utilizar diferentes pruebas. En este caso vamos a utilizar
+. **** una estimación por MCO, la prueba canónica de Anderson, la prueba de Cragg-Donald y la prueba de Stock y Yoko. 
+. 
+. **** 1.1 Distancia
+. 
+. **** 1.1.1 Regresión MCO 
+. 
+. reg D distancia
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  1,  3998) ={res}   50.14
+    {txt}   Model {char |} {res} 12.3778733     1  12.3778733           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 987.046127  3998  .246884974           {txt}R-squared     = {res} 0.0124
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0121
+    {txt}   Total {char |} {res}    999.424  3999   .24991848           {txt}Root MSE      = {res} .49688
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+   distancia {c |}  {res}-.0000498   7.03e-06    -7.08   0.000    -.0000636    -.000036
+{txt}       _cons {c |}  {res} .5889147    .016274    36.19   0.000     .5570085    .6208208
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. reg D $X distancia
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  6,  3993) ={res}   19.23
+    {txt}   Model {char |} {res} 28.0671549     6  4.67785916           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 971.356845  3993  .243264925           {txt}R-squared     = {res} 0.0281
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0266
+    {txt}   Total {char |} {res}    999.424  3999   .24991848           {txt}Root MSE      = {res} .49322
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+    personas {c |}  {res}-.0211905   .0041425    -5.12   0.000    -.0293121    -.013069
+{txt}     orden_n {c |}  {res} .0937512   .0240311     3.90   0.000     .0466369    .1408655
+{txt}ocupado_jefe {c |}  {res} .0785951    .020379     3.86   0.000     .0386409    .1185493
+{txt}  educa_jefe {c |}  {res}-.0058249   .0021244    -2.74   0.006    -.0099899   -.0016598
+{txt}ingresos_h~e {c |}  {res} .0003046   .0000923     3.30   0.001     .0001237    .0004856
+{txt}   distancia {c |}  {res}-.0000499   6.98e-06    -7.14   0.000    -.0000635   -.0000362
+{txt}       _cons {c |}  {res} .5447223   .0429713    12.68   0.000     .4604746      .62897
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Vemos que la distancia sí puede ser un buen predictor de la variable "D". 
+. **** El valor del estadístico F es 19,23. Según Stock y Watson pg. 443, (2.007), si el estadístico
+. **** F es superior a diez, se puede asegurar que el instrumento es relevante. Además, todos los coeficientes
+. **** son estadísticamente significativos.
+. 
+. **** 1.1.2 Prueba canónica de Anderson
+. 
+. ivreg2 ha_nchs $X (D=distancia)
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    4.64
+{txt}{col 55}Prob > F      = {res}  0.0001
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0464
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0567
+{txt}Residual SS             = {res} 1173.111503{txt}{col 55}Root MSE      = {res}   .5416
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .1390646   .1537524     0.90   0.366    -.1622846    .4404138
+    {txt}personas {c |}  {res}-.0117333   .0056077    -2.09   0.036    -.0227241   -.0007424
+     {txt}orden_n {c |}  {res} -.053356    .029773    -1.79   0.073    -.1117099     .004998
+{txt}ocupado_jefe {c |}  {res}-.0275681   .0255749    -1.08   0.281     -.077694    .0225578
+  {txt}educa_jefe {c |}  {res} .0053271   .0025021     2.13   0.033     .0004231     .010231
+{txt}ingresos_h~e {c |}  {res} .0001958   .0001113     1.76   0.079    -.0000224    .0004139
+       {txt}_cons {c |}  {res}-.0348009   .0821434    -0.42   0.672    -.1957989    .1261971
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71}  50.443
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  50.998
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 16.38
+{txt}{col 42}15% maximal IV size{res}{col 73}  8.96
+{txt}{col 42}20% maximal IV size{res}{col 73}  6.66
+{txt}{col 42}25% maximal IV size{res}{col 73}  5.53
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.000
+{txt}{col 50}(equation exactly identified)
+{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}distancia
+{hline 78}
+
+{com}. 
+. **** La hipótesis nula de esta prueba es que la ecuación está subidentificada. Dado que la rechazamos, la
+. **** prueba canónica de Anderson (Underidentification test) nos permite estar más seguros de la relevancia de nuestro instrumento.
+. 
+. **** 1.1.3 Prueba Cragg-Donald
+. 
+. ivreg2 ha_nchs $X (D=distancia), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}   19.23
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0281
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5024
+{txt}Residual SS             = {res} 971.3568451{txt}{col 55}Root MSE      = {res}   .4932
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res}-.0211905   .0041425    -5.12   0.000    -.0293121    -.013069
+     {txt}orden_n {c |}  {res} .0937512   .0240311     3.90   0.000     .0466369    .1408655
+{txt}ocupado_jefe {c |}  {res} .0785951    .020379     3.86   0.000     .0386409    .1185493
+  {txt}educa_jefe {c |}  {res}-.0058249   .0021244    -2.74   0.006    -.0099899   -.0016598
+{txt}ingresos_h~e {c |}  {res} .0003046   .0000923     3.30   0.001     .0001237    .0004856
+   {txt}distancia {c |}  {res}-.0000499   6.98e-06    -7.14   0.000    -.0000635   -.0000362
+       {txt}_cons {c |}  {res} .5447223   .0429713    12.68   0.000     .4604746      .62897
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe distancia
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0126
+{txt}Test of excluded instruments:
+  F(  1,  3993) = {res}   51.00
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  1{txt},{res}  3993{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0126{col 31}{txt}|{col 35}{res}  0.0126{col 49}{txt}|{col 54}{res}   51.00{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}1{txt})={res}50.44  {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}1{txt})={res}51.09  {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}   51.00
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}1{txt},{res}3993{txt})={col 40}{res}0.78   {col 50}{txt}P-val={res}0.3760
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}0.79   {col 50}{txt}P-val={res}0.3755
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}0.79   {col 50}{txt}P-val={res}0.3756
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         7
+{txt}Number of excluded instruments       L1 = {res}         1
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    4.64
+{txt}{col 55}Prob > F      = {res}  0.0001
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0464
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0567
+{txt}Residual SS             = {res} 1173.111503{txt}{col 55}Root MSE      = {res}   .5416
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .1390646   .1537524     0.90   0.366    -.1622846    .4404138
+    {txt}personas {c |}  {res}-.0117333   .0056077    -2.09   0.036    -.0227241   -.0007424
+     {txt}orden_n {c |}  {res} -.053356    .029773    -1.79   0.073    -.1117099     .004998
+{txt}ocupado_jefe {c |}  {res}-.0275681   .0255749    -1.08   0.281     -.077694    .0225578
+  {txt}educa_jefe {c |}  {res} .0053271   .0025021     2.13   0.033     .0004231     .010231
+{txt}ingresos_h~e {c |}  {res} .0001958   .0001113     1.76   0.079    -.0000224    .0004139
+       {txt}_cons {c |}  {res}-.0348009   .0821434    -0.42   0.672    -.1957989    .1261971
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71}  50.443
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  50.998
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 16.38
+{txt}{col 42}15% maximal IV size{res}{col 73}  8.96
+{txt}{col 42}20% maximal IV size{res}{col 73}  6.66
+{txt}{col 42}25% maximal IV size{res}{col 73}  5.53
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.000
+{txt}{col 50}(equation exactly identified)
+{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}distancia
+{hline 78}
+
+{com}. 
+. **** La prueba Cragg-Donald tiene la misma hipótesis nula que la prueba canónica de Anderson pero 
+. **** el estadístico de prueba se construye de manera diferente. En este caso, también rechazamos
+. **** la hipótesis nula. 
+. 
+. **** 1.1.4 Prueba de Stock y Yoko
+. 
+. ivreg2 ha_nchs $X (D=distancia), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}   19.23
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0281
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5024
+{txt}Residual SS             = {res} 971.3568451{txt}{col 55}Root MSE      = {res}   .4932
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res}-.0211905   .0041425    -5.12   0.000    -.0293121    -.013069
+     {txt}orden_n {c |}  {res} .0937512   .0240311     3.90   0.000     .0466369    .1408655
+{txt}ocupado_jefe {c |}  {res} .0785951    .020379     3.86   0.000     .0386409    .1185493
+  {txt}educa_jefe {c |}  {res}-.0058249   .0021244    -2.74   0.006    -.0099899   -.0016598
+{txt}ingresos_h~e {c |}  {res} .0003046   .0000923     3.30   0.001     .0001237    .0004856
+   {txt}distancia {c |}  {res}-.0000499   6.98e-06    -7.14   0.000    -.0000635   -.0000362
+       {txt}_cons {c |}  {res} .5447223   .0429713    12.68   0.000     .4604746      .62897
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe distancia
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0126
+{txt}Test of excluded instruments:
+  F(  1,  3993) = {res}   51.00
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  1{txt},{res}  3993{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0126{col 31}{txt}|{col 35}{res}  0.0126{col 49}{txt}|{col 54}{res}   51.00{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}1{txt})={res}50.44  {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}1{txt})={res}51.09  {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}   51.00
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}1{txt},{res}3993{txt})={col 40}{res}0.78   {col 50}{txt}P-val={res}0.3760
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}0.79   {col 50}{txt}P-val={res}0.3755
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}0.79   {col 50}{txt}P-val={res}0.3756
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         7
+{txt}Number of excluded instruments       L1 = {res}         1
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    4.64
+{txt}{col 55}Prob > F      = {res}  0.0001
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0464
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0567
+{txt}Residual SS             = {res} 1173.111503{txt}{col 55}Root MSE      = {res}   .5416
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .1390646   .1537524     0.90   0.366    -.1622846    .4404138
+    {txt}personas {c |}  {res}-.0117333   .0056077    -2.09   0.036    -.0227241   -.0007424
+     {txt}orden_n {c |}  {res} -.053356    .029773    -1.79   0.073    -.1117099     .004998
+{txt}ocupado_jefe {c |}  {res}-.0275681   .0255749    -1.08   0.281     -.077694    .0225578
+  {txt}educa_jefe {c |}  {res} .0053271   .0025021     2.13   0.033     .0004231     .010231
+{txt}ingresos_h~e {c |}  {res} .0001958   .0001113     1.76   0.079    -.0000224    .0004139
+       {txt}_cons {c |}  {res}-.0348009   .0821434    -0.42   0.672    -.1957989    .1261971
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71}  50.443
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  50.998
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 16.38
+{txt}{col 42}15% maximal IV size{res}{col 73}  8.96
+{txt}{col 42}20% maximal IV size{res}{col 73}  6.66
+{txt}{col 42}25% maximal IV size{res}{col 73}  5.53
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.000
+{txt}{col 50}(equation exactly identified)
+{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}distancia
+{hline 78}
+
+{com}. 
+. **** Para esta prueba utilizamos el estadístico Cragg-Donald y nos remitimos al valor reportado en la tabla de Stock y Yoko (2002).
+. 
+. *Realizamos las mismas pruebas para el instrumento "of_op":
+. 
+. **** 1.2 of_op
+. 
+. **** 1.2.1 Regresión MCO 
+. 
+. reg D of_op
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  1,  3998) ={res}   78.32
+    {txt}   Model {char |} {res} 19.2033928     1  19.2033928           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 980.220607  3998  .245177741           {txt}R-squared     = {res} 0.0192
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0190
+    {txt}   Total {char |} {res}    999.424  3999   .24991848           {txt}Root MSE      = {res} .49515
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+       of_op {c |}  {res} .0337162   .0038097     8.85   0.000     .0262471    .0411853
+{txt}       _cons {c |}  {res} .3983992   .0127982    31.13   0.000     .3733075    .4234909
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. reg D $X of_op
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  6,  3993) ={res}   24.03
+    {txt}   Model {char |} {res} 34.8331886     6  5.80553144           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 964.590811  3993  .241570451           {txt}R-squared     = {res} 0.0349
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0334
+    {txt}   Total {char |} {res}    999.424  3999   .24991848           {txt}Root MSE      = {res}  .4915
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+    personas {c |}  {res} -.021453    .004128    -5.20   0.000    -.0295461   -.0133598
+{txt}     orden_n {c |}  {res} .0934295   .0239443     3.90   0.000     .0464852    .1403738
+{txt}ocupado_jefe {c |}  {res} .0772656   .0203094     3.80   0.000     .0374479    .1170834
+{txt}  educa_jefe {c |}  {res}-.0057974    .002117    -2.74   0.006     -.009948   -.0016469
+{txt}ingresos_h~e {c |}  {res} .0003029    .000092     3.29   0.001     .0001226    .0004832
+{txt}       of_op {c |}  {res} .0336993   .0037827     8.91   0.000      .026283    .0411156
+{txt}       _cons {c |}  {res} .3567943   .0419026     8.51   0.000     .2746417    .4389468
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** 1.2.2 Prueba canónica de Anderson
+. 
+. ivreg2 ha_nchs $X (D=of_op)
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.27
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0560
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0663
+{txt}Residual SS             = {res} 1161.282359{txt}{col 55}Root MSE      = {res}   .5388
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2560193   .1230562     2.08   0.037     .0148335    .4972051
+    {txt}personas {c |}  {res}-.0092382   .0052317    -1.77   0.077    -.0194921    .0010157
+     {txt}orden_n {c |}  {res}-.0638571   .0284765    -2.24   0.025    -.1196701   -.0080442
+{txt}ocupado_jefe {c |}  {res} -.036992   .0243693    -1.52   0.129    -.0847548    .0107709
+  {txt}educa_jefe {c |}  {res} .0060156   .0024312     2.47   0.013     .0012505    .0107808
+{txt}ingresos_h~e {c |}  {res} .0001607   .0001074     1.50   0.134    -.0000497    .0003711
+       {txt}_cons {c |}  {res}-.0871872     .07087    -1.23   0.219    -.2260898    .0517155
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71}  77.954
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  79.365
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 16.38
+{txt}{col 42}15% maximal IV size{res}{col 73}  8.96
+{txt}{col 42}20% maximal IV size{res}{col 73}  6.66
+{txt}{col 42}25% maximal IV size{res}{col 73}  5.53
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.000
+{txt}{col 50}(equation exactly identified)
+{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op
+{hline 78}
+
+{com}. 
+. **** 1.2.3 Prueba Cragg-Donald
+. 
+. ivreg2 ha_nchs $X (D=of_op), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}   24.03
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0349
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5058
+{txt}Residual SS             = {res} 964.5908114{txt}{col 55}Root MSE      = {res}   .4915
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res} -.021453    .004128    -5.20   0.000    -.0295461   -.0133598
+     {txt}orden_n {c |}  {res} .0934295   .0239443     3.90   0.000     .0464852    .1403738
+{txt}ocupado_jefe {c |}  {res} .0772656   .0203094     3.80   0.000     .0374479    .1170834
+  {txt}educa_jefe {c |}  {res}-.0057974    .002117    -2.74   0.006     -.009948   -.0016469
+{txt}ingresos_h~e {c |}  {res} .0003029    .000092     3.29   0.001     .0001226    .0004832
+       {txt}of_op {c |}  {res} .0336993   .0037827     8.91   0.000      .026283    .0411156
+       {txt}_cons {c |}  {res} .3567943   .0419026     8.51   0.000     .2746417    .4389468
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe of_op
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0195
+{txt}Test of excluded instruments:
+  F(  1,  3993) = {res}   79.36
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  1{txt},{res}  3993{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0195{col 31}{txt}|{col 35}{res}  0.0195{col 49}{txt}|{col 54}{res}   79.36{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}1{txt})={res}77.95  {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}1{txt})={res}79.50  {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}   79.36
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}1{txt},{res}3993{txt})={col 40}{res}4.11   {col 50}{txt}P-val={res}0.0427
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}4.12   {col 50}{txt}P-val={res}0.0425
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}4.11   {col 50}{txt}P-val={res}0.0426
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         7
+{txt}Number of excluded instruments       L1 = {res}         1
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.27
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0560
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0663
+{txt}Residual SS             = {res} 1161.282359{txt}{col 55}Root MSE      = {res}   .5388
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2560193   .1230562     2.08   0.037     .0148335    .4972051
+    {txt}personas {c |}  {res}-.0092382   .0052317    -1.77   0.077    -.0194921    .0010157
+     {txt}orden_n {c |}  {res}-.0638571   .0284765    -2.24   0.025    -.1196701   -.0080442
+{txt}ocupado_jefe {c |}  {res} -.036992   .0243693    -1.52   0.129    -.0847548    .0107709
+  {txt}educa_jefe {c |}  {res} .0060156   .0024312     2.47   0.013     .0012505    .0107808
+{txt}ingresos_h~e {c |}  {res} .0001607   .0001074     1.50   0.134    -.0000497    .0003711
+       {txt}_cons {c |}  {res}-.0871872     .07087    -1.23   0.219    -.2260898    .0517155
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71}  77.954
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  79.365
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 16.38
+{txt}{col 42}15% maximal IV size{res}{col 73}  8.96
+{txt}{col 42}20% maximal IV size{res}{col 73}  6.66
+{txt}{col 42}25% maximal IV size{res}{col 73}  5.53
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.000
+{txt}{col 50}(equation exactly identified)
+{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op
+{hline 78}
+
+{com}. 
+. **** 1.2.4 Prueba de Stock y Yoko
+. 
+. ivreg2 ha_nchs $X (D=of_op), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}   24.03
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0349
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5058
+{txt}Residual SS             = {res} 964.5908114{txt}{col 55}Root MSE      = {res}   .4915
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res} -.021453    .004128    -5.20   0.000    -.0295461   -.0133598
+     {txt}orden_n {c |}  {res} .0934295   .0239443     3.90   0.000     .0464852    .1403738
+{txt}ocupado_jefe {c |}  {res} .0772656   .0203094     3.80   0.000     .0374479    .1170834
+  {txt}educa_jefe {c |}  {res}-.0057974    .002117    -2.74   0.006     -.009948   -.0016469
+{txt}ingresos_h~e {c |}  {res} .0003029    .000092     3.29   0.001     .0001226    .0004832
+       {txt}of_op {c |}  {res} .0336993   .0037827     8.91   0.000      .026283    .0411156
+       {txt}_cons {c |}  {res} .3567943   .0419026     8.51   0.000     .2746417    .4389468
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe of_op
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0195
+{txt}Test of excluded instruments:
+  F(  1,  3993) = {res}   79.36
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  1{txt},{res}  3993{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0195{col 31}{txt}|{col 35}{res}  0.0195{col 49}{txt}|{col 54}{res}   79.36{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}1{txt})={res}77.95  {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}1{txt})={res}79.50  {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}   79.36
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}1{txt},{res}3993{txt})={col 40}{res}4.11   {col 50}{txt}P-val={res}0.0427
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}4.12   {col 50}{txt}P-val={res}0.0425
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}4.11   {col 50}{txt}P-val={res}0.0426
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         7
+{txt}Number of excluded instruments       L1 = {res}         1
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.27
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0560
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0663
+{txt}Residual SS             = {res} 1161.282359{txt}{col 55}Root MSE      = {res}   .5388
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2560193   .1230562     2.08   0.037     .0148335    .4972051
+    {txt}personas {c |}  {res}-.0092382   .0052317    -1.77   0.077    -.0194921    .0010157
+     {txt}orden_n {c |}  {res}-.0638571   .0284765    -2.24   0.025    -.1196701   -.0080442
+{txt}ocupado_jefe {c |}  {res} -.036992   .0243693    -1.52   0.129    -.0847548    .0107709
+  {txt}educa_jefe {c |}  {res} .0060156   .0024312     2.47   0.013     .0012505    .0107808
+{txt}ingresos_h~e {c |}  {res} .0001607   .0001074     1.50   0.134    -.0000497    .0003711
+       {txt}_cons {c |}  {res}-.0871872     .07087    -1.23   0.219    -.2260898    .0517155
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71}  77.954
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  79.365
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 16.38
+{txt}{col 42}15% maximal IV size{res}{col 73}  8.96
+{txt}{col 42}20% maximal IV size{res}{col 73}  6.66
+{txt}{col 42}25% maximal IV size{res}{col 73}  5.53
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.000
+{txt}{col 50}(equation exactly identified)
+{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op
+{hline 78}
+
+{com}. 
+. **** Ahora realizamos las mismas pruebas utilizando los dos instrumentos:
+. 
+. **** 1.3 Distancia y oficinas operadoras:
+. 
+. **** 1.3.1 Regresión MCO 
+. 
+. reg D of_op distancia
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  2,  3997) ={res}   64.00
+    {txt}   Model {char |} {res} 31.0125359     2   15.506268           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 968.411464  3997  .242284579           {txt}R-squared     = {res} 0.0310
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0305
+    {txt}   Total {char |} {res}    999.424  3999   .24991848           {txt}Root MSE      = {res} .49222
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+       of_op {c |}  {res}  .033219   .0037878     8.77   0.000     .0257928    .0406453
+{txt}   distancia {c |}  {res}-.0000486   6.97e-06    -6.98   0.000    -.0000623    -.000035
+{txt}       _cons {c |}  {res} .4983069   .0191481    26.02   0.000     .4607659    .5358478
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. reg D $X of_op distancia
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  7,  3992) ={res}   27.95
+    {txt}   Model {char |} {res}  46.689176     7  6.66988229           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 952.734824  3992  .238661028           {txt}R-squared     = {res} 0.0467
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0450
+    {txt}   Total {char |} {res}    999.424  3999   .24991848           {txt}Root MSE      = {res} .48853
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+    personas {c |}  {res}-.0213117   .0041031    -5.19   0.000     -.029356   -.0132673
+{txt}     orden_n {c |}  {res} .0972524   .0238059     4.09   0.000     .0505796    .1439253
+{txt}ocupado_jefe {c |}  {res} .0753753   .0201885     3.73   0.000     .0357946    .1149561
+{txt}  educa_jefe {c |}  {res}-.0057376   .0021042    -2.73   0.006    -.0098631   -.0016121
+{txt}ingresos_h~e {c |}  {res} .0003076   .0000914     3.37   0.001     .0001284    .0004868
+{txt}       of_op {c |}  {res} .0332178   .0037605     8.83   0.000     .0258451    .0405905
+{txt}   distancia {c |}  {res}-.0000487   6.92e-06    -7.05   0.000    -.0000623   -.0000352
+{txt}       _cons {c |}  {res} .4527444   .0438179    10.33   0.000     .3668368     .538652
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. test distancia=of_op=0
+
+{txt} ( 1) {res}- of_op + distancia = 0
+{txt} ( 2)  {res}distancia = 0
+
+{txt}       F(  2,  3992) ={res}   65.00
+{txt}{col 13}Prob > F ={res}    0.0000
+{txt}
+{com}. 
+. **** 1.3.2 Prueba canónica de Anderson
+. 
+. ivreg2 ha_nchs $X (D=of_op distancia)
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.33
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0548
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0651
+{txt}Residual SS             = {res} 1162.702759{txt}{col 55}Root MSE      = {res}   .5391
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2102978   .0967891     2.17   0.030     .0205946     .400001
+    {txt}personas {c |}  {res}-.0102136   .0049767    -2.05   0.040    -.0199678   -.0004595
+     {txt}orden_n {c |}  {res}-.0597519   .0276622    -2.16   0.031    -.1139689   -.0055349
+{txt}ocupado_jefe {c |}  {res}-.0333079   .0236003    -1.41   0.158    -.0795636    .0129479
+  {txt}educa_jefe {c |}  {res} .0057464   .0023911     2.40   0.016       .00106    .0104329
+{txt}ingresos_h~e {c |}  {res} .0001744    .000105     1.66   0.097    -.0000313    .0003801
+       {txt}_cons {c |}  {res}-.0667076   .0621803    -1.07   0.283    -.1885789    .0551636
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71} 126.161
+{txt}{col 52}Chi-sq({res}2{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  65.005
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 19.93
+{txt}{col 42}15% maximal IV size{res}{col 73} 11.59
+{txt}{col 42}20% maximal IV size{res}{col 73}  8.75
+{txt}{col 42}25% maximal IV size{res}{col 73}  7.25
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.361
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.5480
+{txt}{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op distancia
+{hline 78}
+
+{com}. 
+. **** 1.3.3 Prueba Cragg-Donald
+. 
+. ivreg2 ha_nchs $X (D=of_op distancia), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  7,  3992) = {res}   27.95
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0467
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5119
+{txt}Residual SS             = {res}  952.734824{txt}{col 55}Root MSE      = {res}   .4885
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res}-.0213117   .0041031    -5.19   0.000     -.029356   -.0132673
+     {txt}orden_n {c |}  {res} .0972524   .0238059     4.09   0.000     .0505796    .1439253
+{txt}ocupado_jefe {c |}  {res} .0753753   .0201885     3.73   0.000     .0357946    .1149561
+  {txt}educa_jefe {c |}  {res}-.0057376   .0021042    -2.73   0.006    -.0098631   -.0016121
+{txt}ingresos_h~e {c |}  {res} .0003076   .0000914     3.37   0.001     .0001284    .0004868
+       {txt}of_op {c |}  {res} .0332178   .0037605     8.83   0.000     .0258451    .0405905
+   {txt}distancia {c |}  {res}-.0000487   6.92e-06    -7.05   0.000    -.0000623   -.0000352
+       {txt}_cons {c |}  {res} .4527444   .0438179    10.33   0.000     .3668368     .538652
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe of_op distancia
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0315
+{txt}Test of excluded instruments:
+  F(  2,  3992) = {res}   65.00
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  2{txt},{res}  3992{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0315{col 31}{txt}|{col 35}{res}  0.0315{col 49}{txt}|{col 54}{res}   65.00{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}2{txt})={res}126.16 {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}2{txt})={res}130.27 {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}   65.00
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}2{txt},{res}3992{txt})={col 40}{res}2.42   {col 50}{txt}P-val={res}0.0895
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}2{txt})={col 40}{res}4.84   {col 50}{txt}P-val={res}0.0889
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}2{txt})={col 40}{res}4.83   {col 50}{txt}P-val={res}0.0892
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         8
+{txt}Number of excluded instruments       L1 = {res}         2
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.33
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0548
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0651
+{txt}Residual SS             = {res} 1162.702759{txt}{col 55}Root MSE      = {res}   .5391
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2102978   .0967891     2.17   0.030     .0205946     .400001
+    {txt}personas {c |}  {res}-.0102136   .0049767    -2.05   0.040    -.0199678   -.0004595
+     {txt}orden_n {c |}  {res}-.0597519   .0276622    -2.16   0.031    -.1139689   -.0055349
+{txt}ocupado_jefe {c |}  {res}-.0333079   .0236003    -1.41   0.158    -.0795636    .0129479
+  {txt}educa_jefe {c |}  {res} .0057464   .0023911     2.40   0.016       .00106    .0104329
+{txt}ingresos_h~e {c |}  {res} .0001744    .000105     1.66   0.097    -.0000313    .0003801
+       {txt}_cons {c |}  {res}-.0667076   .0621803    -1.07   0.283    -.1885789    .0551636
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71} 126.161
+{txt}{col 52}Chi-sq({res}2{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  65.005
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 19.93
+{txt}{col 42}15% maximal IV size{res}{col 73} 11.59
+{txt}{col 42}20% maximal IV size{res}{col 73}  8.75
+{txt}{col 42}25% maximal IV size{res}{col 73}  7.25
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.361
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.5480
+{txt}{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op distancia
+{hline 78}
+
+{com}. 
+. **** 1.3.4 Prueba de Stock y Yoko
+. 
+. ivreg2 ha_nchs $X (D=of_op distancia), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  7,  3992) = {res}   27.95
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0467
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5119
+{txt}Residual SS             = {res}  952.734824{txt}{col 55}Root MSE      = {res}   .4885
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res}-.0213117   .0041031    -5.19   0.000     -.029356   -.0132673
+     {txt}orden_n {c |}  {res} .0972524   .0238059     4.09   0.000     .0505796    .1439253
+{txt}ocupado_jefe {c |}  {res} .0753753   .0201885     3.73   0.000     .0357946    .1149561
+  {txt}educa_jefe {c |}  {res}-.0057376   .0021042    -2.73   0.006    -.0098631   -.0016121
+{txt}ingresos_h~e {c |}  {res} .0003076   .0000914     3.37   0.001     .0001284    .0004868
+       {txt}of_op {c |}  {res} .0332178   .0037605     8.83   0.000     .0258451    .0405905
+   {txt}distancia {c |}  {res}-.0000487   6.92e-06    -7.05   0.000    -.0000623   -.0000352
+       {txt}_cons {c |}  {res} .4527444   .0438179    10.33   0.000     .3668368     .538652
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe of_op distancia
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0315
+{txt}Test of excluded instruments:
+  F(  2,  3992) = {res}   65.00
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  2{txt},{res}  3992{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0315{col 31}{txt}|{col 35}{res}  0.0315{col 49}{txt}|{col 54}{res}   65.00{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}2{txt})={res}126.16 {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}2{txt})={res}130.27 {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}   65.00
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}2{txt},{res}3992{txt})={col 40}{res}2.42   {col 50}{txt}P-val={res}0.0895
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}2{txt})={col 40}{res}4.84   {col 50}{txt}P-val={res}0.0889
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}2{txt})={col 40}{res}4.83   {col 50}{txt}P-val={res}0.0892
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         8
+{txt}Number of excluded instruments       L1 = {res}         2
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.33
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0548
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0651
+{txt}Residual SS             = {res} 1162.702759{txt}{col 55}Root MSE      = {res}   .5391
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2102978   .0967891     2.17   0.030     .0205946     .400001
+    {txt}personas {c |}  {res}-.0102136   .0049767    -2.05   0.040    -.0199678   -.0004595
+     {txt}orden_n {c |}  {res}-.0597519   .0276622    -2.16   0.031    -.1139689   -.0055349
+{txt}ocupado_jefe {c |}  {res}-.0333079   .0236003    -1.41   0.158    -.0795636    .0129479
+  {txt}educa_jefe {c |}  {res} .0057464   .0023911     2.40   0.016       .00106    .0104329
+{txt}ingresos_h~e {c |}  {res} .0001744    .000105     1.66   0.097    -.0000313    .0003801
+       {txt}_cons {c |}  {res}-.0667076   .0621803    -1.07   0.283    -.1885789    .0551636
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71} 126.161
+{txt}{col 52}Chi-sq({res}2{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  65.005
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 19.93
+{txt}{col 42}15% maximal IV size{res}{col 73} 11.59
+{txt}{col 42}20% maximal IV size{res}{col 73}  8.75
+{txt}{col 42}25% maximal IV size{res}{col 73}  7.25
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.361
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.5480
+{txt}{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op distancia
+{hline 78}
+
+{com}. 
+. **** Podemos concluir, por lo tanto, que los instrumentos son relevantes.
+. 
+. 
+. *------------------*
+. * 2. Exogeneidad   *
+. *------------------*
+. 
+. **** Al igual que probamos la relevancia de los instrumentos, la exogeneidad la probaremos
+. **** en cada uno de los instrumentos y después utilizando los dos. 
+. 
+. **** 2.1 Distancia
+. 
+. **** 2.1.1 Regresión de errores en función del instrumento.
+. 
+. **** Lo que vamos a hacer es predecir los errores de MCO y verificar que estos no estén relacionados
+. **** con el instrumento
+. 
+. reg ha_nchs D $X
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  6,  3993) ={res}   39.49
+    {txt}   Model {char |} {res} 68.9063178     6  11.4843863           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 1161.23317  3993  .290817222           {txt}R-squared     = {res} 0.0560
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0546
+    {txt}   Total {char |} {res} 1230.13949  3999  .307611775           {txt}Root MSE      = {res} .53927
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .2489481   .0171935    14.48   0.000     .2152392     .282657
+{txt}    personas {c |}  {res}-.0093891    .004544    -2.07   0.039     -.018298   -.0004802
+{txt}     orden_n {c |}  {res}-.0632222   .0263134    -2.40   0.016    -.1148111   -.0116333
+{txt}ocupado_jefe {c |}  {res}-.0364222   .0223229    -1.63   0.103    -.0801875    .0073431
+{txt}  educa_jefe {c |}  {res}  .005974    .002325     2.57   0.010     .0014157    .0105322
+{txt}ingresos_h~e {c |}  {res} .0001628    .000101     1.61   0.107    -.0000353    .0003609
+{txt}       _cons {c |}  {res}-.0840199   .0452452    -1.86   0.063    -.1727257     .004686
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. predict uhat, residuals
+{txt}
+{com}. 
+. reg uhat distancia
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  1,  3998) ={res}    0.52
+    {txt}   Model {char |} {res} .149670856     1  .149670856           {txt}Prob > F      = {res} 0.4729
+    {txt}Residual {char |} {res}  1161.0835  3998  .290416083           {txt}R-squared     = {res} 0.0001
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0001
+    {txt}   Total {char |} {res} 1161.23317  3999  .290380888           {txt}Root MSE      = {res}  .5389
+
+{txt}{hline 13}{c TT}{hline 64}
+        uhat {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+   distancia {c |}  {res} 5.47e-06   7.63e-06     0.72   0.473    -9.48e-06    .0000204
+{txt}       _cons {c |}  {res}-.0110969   .0176505    -0.63   0.530    -.0457017     .023508
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Vemos que la variable distancia no es significativa y tampoco lo es el modelo.
+. **** Para utilizar las otras pruebas de exogeneidad es necesario que el número
+. **** de instrumentso exceda el número de variables a instrumentar. Estas pruebas
+. **** serán llevadas a cabo cuando evaluemos la exogeneidad de la distancia y las 
+. **** oficinas operadoras de manera conjunta.
+. 
+. **** 2.2 Oficinas operadoras
+. 
+. **** 2.2.1 Regresión de errores en función del instrumento
+. 
+. reg uhat of_op
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  1,  3998) ={res}    0.00
+    {txt}   Model {char |} {res} .000958042     1  .000958042           {txt}Prob > F      = {res} 0.9542
+    {txt}Residual {char |} {res} 1161.23221  3998   .29045328           {txt}R-squared     = {res} 0.0000
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0002
+    {txt}   Total {char |} {res} 1161.23317  3999  .290380888           {txt}Root MSE      = {res} .53894
+
+{txt}{hline 13}{c TT}{hline 64}
+        uhat {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+       of_op {c |}  {res} .0002381   .0041466     0.06   0.954    -.0078914    .0083677
+{txt}       _cons {c |}  {res}-.0006329   .0139299    -0.05   0.964    -.0279432    .0266775
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Vemos que of_op aparentemente no predice bien los errores.
+. 
+. **** 2.3 Distancia y Oficinas operadoras
+. 
+. **** 2.2.1 Regresión de errores en función de los instrumentos
+. 
+. reg uhat of_op distancia
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  2,  3997) ={res}    0.26
+    {txt}   Model {char |} {res} .151132554     2  .075566277           {txt}Prob > F      = {res} 0.7710
+    {txt}Residual {char |} {res} 1161.08204  3997  .290488376           {txt}R-squared     = {res} 0.0001
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0004
+    {txt}   Total {char |} {res} 1161.23317  3999  .290380888           {txt}Root MSE      = {res} .53897
+
+{txt}{hline 13}{c TT}{hline 64}
+        uhat {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+       of_op {c |}  {res} .0002942   .0041475     0.07   0.943    -.0078373    .0084257
+{txt}   distancia {c |}  {res} 5.48e-06   7.63e-06     0.72   0.472    -9.47e-06    .0000204
+{txt}       _cons {c |}  {res}-.0118993   .0209666    -0.57   0.570    -.0530055    .0292069
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** 2.2.2 Prueba de Sargan
+. 
+. ivreg2 ha_nchs $X (D=of_op distancia)
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.33
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0548
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0651
+{txt}Residual SS             = {res} 1162.702759{txt}{col 55}Root MSE      = {res}   .5391
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2102978   .0967891     2.17   0.030     .0205946     .400001
+    {txt}personas {c |}  {res}-.0102136   .0049767    -2.05   0.040    -.0199678   -.0004595
+     {txt}orden_n {c |}  {res}-.0597519   .0276622    -2.16   0.031    -.1139689   -.0055349
+{txt}ocupado_jefe {c |}  {res}-.0333079   .0236003    -1.41   0.158    -.0795636    .0129479
+  {txt}educa_jefe {c |}  {res} .0057464   .0023911     2.40   0.016       .00106    .0104329
+{txt}ingresos_h~e {c |}  {res} .0001744    .000105     1.66   0.097    -.0000313    .0003801
+       {txt}_cons {c |}  {res}-.0667076   .0621803    -1.07   0.283    -.1885789    .0551636
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71} 126.161
+{txt}{col 52}Chi-sq({res}2{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  65.005
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 19.93
+{txt}{col 42}15% maximal IV size{res}{col 73} 11.59
+{txt}{col 42}20% maximal IV size{res}{col 73}  8.75
+{txt}{col 42}25% maximal IV size{res}{col 73}  7.25
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.361
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.5480
+{txt}{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op distancia
+{hline 78}
+
+{com}. 
+. **** La hipótesis nula de esta prueba es que los instrumentos son exógenos. Rechazarla nos llevaría a dudar
+. **** sobre la validez de los instrumentos. En este caso no podemos rechazar esta prueba.
+. 
+. **** 2.2.3 Sargan y Basmann
+. 
+. overid
+
+{txt}Tests of overidentifying restrictions:
+Sargan N*R-sq test {res}{col 25}  0.361{txt}  Chi-sq({res}1{txt}){col 47}P-value = {res}0.5480
+{txt}Basmann test {res}{col 25}  0.360{txt}  Chi-sq({res}1{txt}){col 47}P-value = {res}0.5484
+{txt}
+{com}. 
+. **** Utilizando el comando "overid" luego de llevar a cabo una estimación por variables instrumentales
+. **** se lleva a cabo la prueba de Sargan y la de Basmann. La prueba de Sargan ya la vimos, la de Basmann
+. **** es una prueba análoga. Sin embargo, el estadístico de prueba se construye de manera diferente. 
+. 
+. ****2.2.4 Prueba "J".
+. 
+. **** La prueba "J" es análoga a la prueba de Sargan pero se utiliza cuando la estimación se hace mediante
+. **** el método generalizado de momentos:
+. 
+. ivreg2 ha_nchs $X (D=of_op distancia), gmm2s robust
+
+{txt}2-Step GMM estimation
+{hline 21}
+
+Estimates efficient for arbitrary heteroskedasticity
+Statistics robust to heteroskedasticity
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.55
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0546
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0649
+{txt}Residual SS             = {res} 1163.013918{txt}{col 55}Root MSE      = {res}   .5392
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2064098   .1010242     2.04   0.041      .008406    .4044136
+    {txt}personas {c |}  {res}-.0103566   .0046438    -2.23   0.026    -.0194583   -.0012549
+     {txt}orden_n {c |}  {res}-.0592206   .0284924    -2.08   0.038    -.1150647   -.0033765
+{txt}ocupado_jefe {c |}  {res}-.0324303   .0229689    -1.41   0.158    -.0774486     .012588
+  {txt}educa_jefe {c |}  {res}  .005722   .0023758     2.41   0.016     .0010655    .0103785
+{txt}ingresos_h~e {c |}  {res} .0001744   .0001107     1.58   0.115    -.0000426    .0003914
+       {txt}_cons {c |}  {res}-.0649516   .0621645    -1.04   0.296    -.1867917    .0568885
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Kleibergen-Paap rk LM statistic):{res}{col 71} 125.143
+{txt}{col 52}Chi-sq({res}2{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Kleibergen-Paap rk Wald F statistic):{res}{col 71}  69.694
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 19.93
+{txt}{col 42}15% maximal IV size{res}{col 73} 11.59
+{txt}{col 42}20% maximal IV size{res}{col 73}  8.75
+{txt}{col 42}25% maximal IV size{res}{col 73}  7.25
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+NB: Critical values are for Cragg-Donald F statistic and i.i.d. errors.
+{hline 78}
+{help ivreg2##overidtests:Hansen J statistic} (overidentification test of all instruments):{res}{col 71}   0.365
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.5456
+{txt}{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}of_op distancia
+{hline 78}
+
+{com}. 
+. 
+. *----------------------------*
+. *  3. Estimación por MC2E    *
+. *----------------------------*
+. 
+. **** Dado que ya probamos que los instrumentos que tenemos pueden ser utilizados, procedemos
+. **** a realizar la estimación mediante MCO en dos etapas. 
+. 
+. **** 3.1 Primera etapa, predicción de la variable endógena (D) utilizando los 
+. **** regresores exógenos y los instrumentos (distancia y of_op):
+. 
+. drop uhat
+{txt}
+{com}. 
+. probit D $X distancia of_op
+
+{txt}Iteration 0:   log likelihood = {res}-2771.4366
+{txt}Iteration 1:   log likelihood = {res}-2675.7646
+{txt}Iteration 2:   log likelihood = {res}-2675.6035
+{txt}Iteration 3:   log likelihood = {res}-2675.6035
+
+{txt}Probit regression                                 Number of obs   = {res}      4000
+                                                  {txt}LR chi2({res}7{txt})      = {res}    191.67
+                                                  {txt}Prob > chi2     = {res}    0.0000
+{txt}Log likelihood = {res}-2675.6035                       {txt}Pseudo R2       = {res}    0.0346
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res} -.056137   .0108297    -5.18   0.000    -.0773628   -.0349112
+     {txt}orden_n {c |}  {res} .2556066   .0626281     4.08   0.000     .1328577    .3783555
+{txt}ocupado_jefe {c |}  {res} .1947698   .0528018     3.69   0.000     .0912802    .2982595
+  {txt}educa_jefe {c |}  {res} -.015059   .0054907    -2.74   0.006    -.0258205   -.0042975
+{txt}ingresos_h~e {c |}  {res} .0008236   .0002426     3.40   0.001     .0003482    .0012991
+   {txt}distancia {c |}  {res}-.0001267   .0000181    -7.00   0.000    -.0001622   -.0000912
+       {txt}of_op {c |}  {res} .0867556   .0099521     8.72   0.000     .0672497    .1062614
+       {txt}_cons {c |}  {res}-.1219782   .1145348    -1.06   0.287    -.3464623    .1025059
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. predict trat_hat
+{txt}(option pr assumed; Pr(D))
+
+{com}. 
+. 
+. **** 3.2 Segunda etapa, regresión donde la variable dependiente es la talla para la edad y 
+. **** se utilizan las variables predichas por la anterior regresión (trata_hat) para instrumentar
+. **** la participación en el programa:
+. 
+. ivreg2 ha_nchs  $X (D=trat_hat), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}   32.69
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0468
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5120
+{txt}Residual SS             = {res} 952.6320316{txt}{col 55}Root MSE      = {res}   .4884
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res} .0000419   .0045089     0.01   0.993    -.0087981    .0088819
+     {txt}orden_n {c |}  {res} -.000604   .0250734    -0.02   0.981    -.0497619    .0485539
+{txt}ocupado_jefe {c |}  {res} .0006032   .0213597     0.03   0.977    -.0412737    .0424801
+  {txt}educa_jefe {c |}  {res}-2.57e-06    .002166    -0.00   0.999    -.0042491     .004244
+{txt}ingresos_h~e {c |}  {res}-3.32e-07   .0000951    -0.00   0.997    -.0001868    .0001861
+    {txt}trat_hat {c |}  {res} 1.000707    .087604    11.42   0.000     .8289546     1.17246
+       {txt}_cons {c |}  {res}-.0004202   .0563133    -0.01   0.994    -.1108256    .1099852
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe trat_hat
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0316
+{txt}Test of excluded instruments:
+  F(  1,  3993) = {res}  130.49
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  1{txt},{res}  3993{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0316{col 31}{txt}|{col 35}{res}  0.0316{col 49}{txt}|{col 54}{res}  130.49{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}1{txt})={res}126.58 {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}1{txt})={res}130.72 {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}  130.49
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}1{txt},{res}3993{txt})={col 40}{res}4.92   {col 50}{txt}P-val={res}0.0266
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}4.93   {col 50}{txt}P-val={res}0.0264
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}1{txt})={col 40}{res}4.92   {col 50}{txt}P-val={res}0.0265
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         7
+{txt}Number of excluded instruments       L1 = {res}         1
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.41
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0553
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0656
+{txt}Residual SS             = {res} 1162.070617{txt}{col 55}Root MSE      = {res}    .539
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2197716   .0966029     2.27   0.023     .0304333    .4091098
+    {txt}personas {c |}  {res}-.0100115   .0049739    -2.01   0.044    -.0197602   -.0002628
+     {txt}orden_n {c |}  {res}-.0606025   .0276502    -2.19   0.028    -.1147959   -.0064091
+{txt}ocupado_jefe {c |}  {res}-.0340712   .0235896    -1.44   0.149    -.0803061    .0121636
+  {txt}educa_jefe {c |}  {res} .0058022   .0023902     2.43   0.015     .0011175     .010487
+{txt}ingresos_h~e {c |}  {res} .0001716   .0001049     1.64   0.102    -.0000341    .0003772
+       {txt}_cons {c |}  {res}-.0709511   .0621135    -1.14   0.253    -.1926914    .0507892
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71} 126.579
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71} 130.487
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 16.38
+{txt}{col 42}15% maximal IV size{res}{col 73}  8.96
+{txt}{col 42}20% maximal IV size{res}{col 73}  6.66
+{txt}{col 42}25% maximal IV size{res}{col 73}  5.53
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.000
+{txt}{col 50}(equation exactly identified)
+{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}trat_hat
+{hline 78}
+
+{com}. 
+. **** Para llevar a cabo la estimación de manera directa con el comando "ivreg2" instrumentando el tratamiento con la distancia y el
+. **** número de oficinas operadoras en el municipio:
+. 
+. ivreg2 ha_nchs $X (D=distancia of_op), first
+
+{txt}First-stage regressions
+{hline 23}
+
+First-stage regression of D:
+
+OLS estimation
+{hline 14}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  7,  3992) = {res}   27.95
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res}     999.424{txt}{col 55}Centered R2   = {res}  0.0467
+{txt}Total (uncentered) SS   = {res}        1952{txt}{col 55}Uncentered R2 = {res}  0.5119
+{txt}Residual SS             = {res}  952.734824{txt}{col 55}Root MSE      = {res}   .4885
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res}-.0213117   .0041031    -5.19   0.000     -.029356   -.0132673
+     {txt}orden_n {c |}  {res} .0972524   .0238059     4.09   0.000     .0505796    .1439253
+{txt}ocupado_jefe {c |}  {res} .0753753   .0201885     3.73   0.000     .0357946    .1149561
+  {txt}educa_jefe {c |}  {res}-.0057376   .0021042    -2.73   0.006    -.0098631   -.0016121
+{txt}ingresos_h~e {c |}  {res} .0003076   .0000914     3.37   0.001     .0001284    .0004868
+   {txt}distancia {c |}  {res}-.0000487   6.92e-06    -7.05   0.000    -.0000623   -.0000352
+       {txt}of_op {c |}  {res} .0332178   .0037605     8.83   0.000     .0258451    .0405905
+       {txt}_cons {c |}  {res} .4527444   .0438179    10.33   0.000     .3668368     .538652
+{txt}{hline 13}{c BT}{hline 64}
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe distancia of_op
+{hline 78}
+{help ivreg2##partialr2:Partial R-squared} of excluded instruments: {res}  0.0315
+{txt}Test of excluded instruments:
+  F(  2,  3992) = {res}   65.00
+{txt}  Prob > F      = {res}  0.0000
+
+
+
+{txt}Summary results for first-stage regressions
+{hline 43}
+
+Variable    |{col 15}{help ivreg2##partialr2:Shea Partial R2}{col 31}|{col 35}{help ivreg2##partialr2:Partial R2}{col 49}|{col 52}{help ivreg2##partialr2:F}{col 53}({res}{col 54}  2{txt},{res}  3992{txt})    P-value
+{res}D           {col 13}{txt}|{col 17}{res}  0.0315{col 31}{txt}|{col 35}{res}  0.0315{col 49}{txt}|{col 54}{res}   65.00{col 67}  0.0000
+
+{help ivreg2##idtest:Underidentification tests}
+{txt}Ho: matrix of reduced form coefficients has rank=K1-1 (underidentified)
+Ha: matrix has rank=K1 (identified)
+{res}Anderson canon. corr. N*CCEV LM statistic{txt}{col 45}Chi-sq({res}2{txt})={res}126.16 {col 64}{txt}P-val={res}0.0000
+Cragg-Donald N*CDEV Wald statistic{txt}{col 45}Chi-sq({res}2{txt})={res}130.27 {col 64}{txt}P-val={res}0.0000
+
+{help ivreg2##widtest:Weak identification test}
+{txt}Ho: equation is weakly identified
+{res}Cragg-Donald Wald F-statistic{col 49}   65.00
+{txt}See main output for Cragg-Donald weak id test critical values
+
+{help ivreg2##wirobust:Weak-instrument-robust inference}
+Tests of joint significance of endogenous regressors B1 in main equation
+Ho: B1=0 and overidentifying restrictions are valid
+{res}Anderson-Rubin Wald test{txt}{col 30}F({res}2{txt},{res}3992{txt})={col 40}{res}2.42   {col 50}{txt}P-val={res}0.0895
+Anderson-Rubin Wald test{txt}{col 30}Chi-sq({res}2{txt})={col 40}{res}4.84   {col 50}{txt}P-val={res}0.0889
+Stock-Wright LM S statistic{txt}{col 30}Chi-sq({res}2{txt})={col 40}{res}4.83   {col 50}{txt}P-val={res}0.0892
+
+{txt}Number of observations               N  = {res}      4000
+{txt}Number of regressors                 K  = {res}         7
+{txt}Number of instruments                L  = {res}         8
+{txt}Number of excluded instruments       L1 = {res}         2
+
+{txt}IV (2SLS) estimation
+{hline 20}
+
+Estimates efficient for homoskedasticity only
+Statistics consistent for homoskedasticity only
+
+                                   {col 55}Number of obs = {res}    4000
+{txt}{col 55}F(  6,  3993) = {res}    5.33
+{txt}{col 55}Prob > F      = {res}  0.0000
+{txt}Total (centered) SS     = {res} 1230.139487{txt}{col 55}Centered R2   = {res}  0.0548
+{txt}Total (uncentered) SS   = {res} 1243.678874{txt}{col 55}Uncentered R2 = {res}  0.0651
+{txt}Residual SS             = {res} 1162.702759{txt}{col 55}Root MSE      = {res}   .5391
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res} .2102978   .0967891     2.17   0.030     .0205946     .400001
+    {txt}personas {c |}  {res}-.0102136   .0049767    -2.05   0.040    -.0199678   -.0004595
+     {txt}orden_n {c |}  {res}-.0597519   .0276622    -2.16   0.031    -.1139689   -.0055349
+{txt}ocupado_jefe {c |}  {res}-.0333079   .0236003    -1.41   0.158    -.0795636    .0129479
+  {txt}educa_jefe {c |}  {res} .0057464   .0023911     2.40   0.016       .00106    .0104329
+{txt}ingresos_h~e {c |}  {res} .0001744    .000105     1.66   0.097    -.0000313    .0003801
+       {txt}_cons {c |}  {res}-.0667076   .0621803    -1.07   0.283    -.1885789    .0551636
+{txt}{hline 13}{c BT}{hline 64}
+{help ivreg2##idtest:Underidentification test} (Anderson canon. corr. LM statistic):{res}{col 71} 126.161
+{txt}{col 52}Chi-sq({res}2{txt}) P-val =  {res}{col 73}0.0000
+{txt}{hline 78}
+{help ivreg2##widtest:Weak identification test} (Cragg-Donald Wald F statistic):{res}{col 71}  65.005
+{txt}Stock-Yogo weak ID test critical values:{col 42}10% maximal IV size{res}{col 73} 19.93
+{txt}{col 42}15% maximal IV size{res}{col 73} 11.59
+{txt}{col 42}20% maximal IV size{res}{col 73}  8.75
+{txt}{col 42}25% maximal IV size{res}{col 73}  7.25
+{txt}Source: Stock-Yogo (2005).  Reproduced by permission.
+{hline 78}
+{help ivreg2##overidtests:Sargan statistic} (overidentification test of all instruments):{res}{col 71}   0.361
+{txt}{col 52}Chi-sq({res}1{txt}) P-val =  {res}{col 73}0.5480
+{txt}{hline 78}
+Instrumented:{col 23}D
+Included instruments:{col 23}personas orden_n ocupado_jefe educa_jefe
+{col 23}ingresos_hogar_jefe
+Excluded instruments:{col 23}distancia of_op
+{hline 78}
+
+{com}. 
+. **** Utilizando mínimos cuadrados en dos etapas vemos que el efecto del tratamiento se disminuye significativamente. 
+. **** Mediante MCO el efecto del tratamiento en la talla para la edad era de 0.24 desviaciones estándar. Sin embargo,
+. **** mediante MC2E pudimos confirmar que en realidad el efecto es 0.21. 
+.         
+. 
+{txt}end of do-file
+
+{com}. log close
+       {txt}log:  {res}F:\EdeI\IV\Diciembre 28\log-iv.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}28 Dec 2009, 12:08:19
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

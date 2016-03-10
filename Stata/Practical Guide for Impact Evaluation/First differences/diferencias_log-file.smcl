@@ -1,0 +1,528 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+       log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Modelo de Diferencias\diferencias_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}31 Aug 2009, 17:29:46
+
+{com}. do "C:\Users\Rodrigo\AppData\Local\Temp\STD0h000000.tmp"
+{txt}
+{com}. *----------------------------------*
+. *      Modelo de diferencias       *
+. *----------------------------------*
+. 
+. 
+. 
+. *----------------------------------------------------------------------------------------------------------------*
+. *Algunos puntos antes de hacer el análisis:
+. 
+. *El símbolo asterisco (*) reconoce una linea del do-file como comentarios
+. *y cuando se corre el do-file las líneas precedidas por este símbolo no son 
+. *reconocidas como comandos.
+. 
+. *Lo primero que debemos hacer es abrir la base de datos del modelo de diferencias
+. 
+. *Para simplificar los comandos definimos un vector X compuesto de las principales características del hogar
+. 
+. global X "personas hombre orden_n baja ocupado_jefe educa_jefe ingresos_hogar_jefe"
+{txt}
+{com}. *----------------------------------------------------------------------------------------------------------------*
+. 
+. 
+.                                 ***************************
+.                                 **** Talla para la edad****
+.                                 ***************************
+. 
+. 
+. *--------------------------------------*
+. *1. Estadísticas descriptivas
+. *--------------------------------------*
+. 
+. 
+. sum ha_nchs, detail
+
+                     {txt}Talla para la edad
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}-3.936628      -5.852884
+{txt} 5%    {res}-2.535352      -5.652266
+{txt}10%    {res} -2.09676      -5.504454       {txt}Obs         {res}       4000
+{txt}25%    {res}-1.532769      -5.456038       {txt}Sum of Wgt. {res}       4000
+
+{txt}50%    {res}-.7905374                      {txt}Mean          {res}-.7288392
+                        {txt}Largest       Std. Dev.     {res} 1.270162
+{txt}75%    {res}-.0348815       4.856632
+{txt}90%    {res} .7795621       5.004343       {txt}Variance      {res} 1.613311
+{txt}95%    {res} 1.317513       5.941913       {txt}Skewness      {res} .4067137
+{txt}99%    {res} 3.087887       5.994383       {txt}Kurtosis      {res} 5.273376
+{txt}
+{com}. 
+. **** Podemos ver algunas características de la variable ha_nchs. Entre estas, el máximo, mínimo, desviación estándar y promedio.
+. 
+. *--------------------------------------*
+. *2. Estadísticas descriptivas por grupo
+. *--------------------------------------*
+. 
+. sum ha_nchs if D==1, detail
+
+                     {txt}Talla para la edad
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}-3.805689      -5.852884
+{txt} 5%    {res}-2.442669      -5.456038
+{txt}10%    {res}-2.026661      -5.141572       {txt}Obs         {res}       2000
+{txt}25%    {res}-1.418647      -5.092871       {txt}Sum of Wgt. {res}       2000
+
+{txt}50%    {res}-.6427878                      {txt}Mean          {res}-.6116743
+                        {txt}Largest       Std. Dev.     {res} 1.265438
+{txt}75%    {res} .1056483       4.732728
+{txt}90%    {res} .8861872       4.856632       {txt}Variance      {res} 1.601334
+{txt}95%    {res} 1.424549       5.004343       {txt}Skewness      {res} .3645176
+{txt}99%    {res} 3.135453       5.941913       {txt}Kurtosis      {res} 5.138183
+{txt}
+{com}. 
+. sum ha_nchs if D==0, detail
+
+                     {txt}Talla para la edad
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}-4.212201      -5.652266
+{txt} 5%    {res}-2.660601      -5.504454
+{txt}10%    {res}-2.155744      -5.241397       {txt}Obs         {res}       2000
+{txt}25%    {res}-1.636544      -5.192995       {txt}Sum of Wgt. {res}       2000
+
+{txt}50%    {res}-.9208255                      {txt}Mean          {res}-.8460041
+                        {txt}Largest       Std. Dev.     {res} 1.264368
+{txt}75%    {res}-.1738329       4.510983
+{txt}90%    {res} .6514927       4.622804       {txt}Variance      {res} 1.598626
+{txt}95%    {res} 1.216139       4.758943       {txt}Skewness      {res} .4590554
+{txt}99%    {res} 2.929789       5.994383       {txt}Kurtosis      {res} 5.522551
+{txt}
+{com}. 
+. *-------------------------------------------------------------------*
+. *3.Regresión con "D" siendo la única variable explicativa *
+. *-------------------------------------------------------------------*
+. 
+. reg ha_nchs D
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  1,  3998) ={res}   34.32
+    {txt}   Model {char |} {res} 54.9104328     1  54.9104328           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 6396.72078  3998  1.59998018           {txt}R-squared     = {res} 0.0085
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0083
+    {txt}   Total {char |} {res} 6451.63121  3999  1.61331113           {txt}Root MSE      = {res} 1.2649
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .2343298   .0399998     5.86   0.000     .1559079    .3127516
+{txt}       _cons {c |}  {res}-.8460041   .0282841   -29.91   0.000    -.9014567   -.7905515
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Mediante la estimación de MCO podemos ver una prueba de diferencia de medias entre los dos grupos (tratamiento
+. **** y control), sin controles adicionales.
+. 
+. *------------------------------------------------*
+. *4. Regresión adicionando variables explicativas
+. *------------------------------------------------*
+. 
+. 
+. reg ha_nchs D $X
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  8,  3991) ={res}   26.95
+    {txt}   Model {char |} {res} 330.694078     8  41.3367597           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 6120.93713  3991  1.53368507           {txt}R-squared     = {res} 0.0513
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0494
+    {txt}   Total {char |} {res} 6451.63121  3999  1.61331113           {txt}Root MSE      = {res} 1.2384
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .2305058   .0391847     5.88   0.000     .1536818    .3073297
+{txt}    personas {c |}  {res}-.0458019   .0101454    -4.51   0.000    -.0656926   -.0259112
+{txt}      hombre {c |}  {res} .0057317   .0391963     0.15   0.884    -.0711149    .0825784
+{txt}     orden_n {c |}  {res}-.1667524   .0624656    -2.67   0.008    -.2892198   -.0442849
+{txt}        baja {c |}  {res}-.4218382   .0391912   -10.76   0.000    -.4986749   -.3450016
+{txt}ocupado_jefe {c |}  {res}-.0485502    .048766    -1.00   0.320    -.1441587    .0470584
+{txt}  educa_jefe {c |}  {res} .0190576   .0052908     3.60   0.000     .0086846    .0294306
+{txt}ingresos_h~e {c |}  {res} .0005315   .0002394     2.22   0.026     .0000621    .0010009
+{txt}       _cons {c |}  {res}-.3399708   .1083648    -3.14   0.002    -.5524263   -.1275153
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Dado que en realida la variable talla para la edad depende de factores adicionales
+. **** como el ingreso del jefe de hogar, el orden de nacimiento, la educación del jefe de hogar
+. **** y el número de personas en el hogar, entre otras, realizamos la prueba de diferencia de medias
+. **** entre los dos grupos pero ahora controlando por estas variables.
+. 
+. 
+. 
+. *---------------------------------------------------------------------*
+. *5. Estimador de diferencias con efectos heterogéneos                       *
+. *---------------------------------------------------------------------*
+. 
+. 
+. reg ha_nchs D $X D_baja
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  9,  3990) ={res}   24.65
+    {txt}   Model {char |} {res} 339.775832     9  37.7528702           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 6111.85538  3990  1.53179333           {txt}R-squared     = {res} 0.0527
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0505
+    {txt}   Total {char |} {res} 6451.63121  3999  1.61331113           {txt}Root MSE      = {res} 1.2377
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .3258111   .0553676     5.88   0.000     .2172597    .4343625
+{txt}    personas {c |}  {res}-.0462821   .0101411    -4.56   0.000    -.0661642   -.0263999
+{txt}      hombre {c |}  {res} .0046569   .0391746     0.12   0.905    -.0721473     .081461
+{txt}     orden_n {c |}  {res}-.1663797   .0624272    -2.67   0.008     -.288772   -.0439874
+{txt}        baja {c |}  {res}-.3264538   .0553952    -5.89   0.000    -.4350593   -.2178484
+{txt}ocupado_jefe {c |}  {res}-.0491834   .0487366    -1.01   0.313    -.1447344    .0463675
+{txt}  educa_jefe {c |}  {res} .0191783   .0052878     3.63   0.000     .0088113    .0295454
+{txt}ingresos_h~e {c |}  {res} .0005296   .0002393     2.21   0.027     .0000605    .0009987
+{txt}      D_baja {c |}  {res}-.1906753   .0783086    -2.43   0.015     -.344204   -.0371466
+{txt}       _cons {c |}  {res}-.3852582   .1098834    -3.51   0.000    -.6006911   -.1698253
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Al incorporar la variable "D_baja"="D"*"baja" podemos encontrar que el 
+. **** tratamiento tiene efectos heterogeneos sobre los individuos dependiendo de la 
+. **** raza a la que pertenecen.
+. 
+. 
+. *--------------------------------------------------*
+. *6. Prueba estadística "D-D_baja=0".
+. *--------------------------------------------------*
+. 
+. reg ha_nchs D $X D_baja
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  9,  3990) ={res}   24.65
+    {txt}   Model {char |} {res} 339.775832     9  37.7528702           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 6111.85538  3990  1.53179333           {txt}R-squared     = {res} 0.0527
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0505
+    {txt}   Total {char |} {res} 6451.63121  3999  1.61331113           {txt}Root MSE      = {res} 1.2377
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .3258111   .0553676     5.88   0.000     .2172597    .4343625
+{txt}    personas {c |}  {res}-.0462821   .0101411    -4.56   0.000    -.0661642   -.0263999
+{txt}      hombre {c |}  {res} .0046569   .0391746     0.12   0.905    -.0721473     .081461
+{txt}     orden_n {c |}  {res}-.1663797   .0624272    -2.67   0.008     -.288772   -.0439874
+{txt}        baja {c |}  {res}-.3264538   .0553952    -5.89   0.000    -.4350593   -.2178484
+{txt}ocupado_jefe {c |}  {res}-.0491834   .0487366    -1.01   0.313    -.1447344    .0463675
+{txt}  educa_jefe {c |}  {res} .0191783   .0052878     3.63   0.000     .0088113    .0295454
+{txt}ingresos_h~e {c |}  {res} .0005296   .0002393     2.21   0.027     .0000605    .0009987
+{txt}      D_baja {c |}  {res}-.1906753   .0783086    -2.43   0.015     -.344204   -.0371466
+{txt}       _cons {c |}  {res}-.3852582   .1098834    -3.51   0.000    -.6006911   -.1698253
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. test D+D_baja=0
+
+{txt} ( 1)  {res}D + D_baja = 0
+
+{txt}       F(  1,  3990) ={res}    5.95
+{txt}{col 13}Prob > F ={res}    0.0147
+{txt}
+{com}. 
+. **** Al correr la anterior regresión pudimos ver que el impacto del tratamiento
+. **** disminuye si el individuo pertenece a la raza "baja". Sin embargo, al probar que
+. **** "D+D_baja" es diferente de cero, y al encontrar que "D"
+. **** y "D_baja" son significativas de manera individual, encontramos que pese a 
+. **** que el programa tiene un efecto reducido sobre la talla para la edad en los individuos
+. **** de raza baja, este efecto es positivo.
+. 
+. 
+. 
+.                                 *****************************
+.                                 **** Desnutrición Crónica****
+.                                 *****************************
+. 
+. *----------------------------*
+. *1. Estadísticas descriptivas
+. *----------------------------*
+. 
+. 
+. sum desn_cr
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+     desn_cr {c |}{res}      4000       .1175    .3220554          0          1
+{txt}
+{com}. 
+. **** Por medio de este comando podemos verificar que 
+. **** aproximadamente 11,75% de los individuos en la muestra sufren
+. **** de desnutrición crónica.
+. 
+. 
+. *----------------------*
+. *2. Promedios por grupo
+. *----------------------*
+. 
+. 
+. sum desn_cr if D==0
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+     desn_cr {c |}{res}      2000       .1315    .3380309          0          1
+{txt}
+{com}. 
+. sum desn_cr if D==1
+
+{txt}    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+     desn_cr {c |}{res}      2000       .1035     .304687          0          1
+{txt}
+{com}. 
+. **** Encontramos los datos para desnutrición crónica para el grupo de tratamiento y control.
+. 
+. 
+. *--------------------------------------------------------------------*
+. *3. Regresión con "D" siendo la única variable explicativa
+. *--------------------------------------------------------------------*
+. 
+. dprobit desn_cr D
+
+{txt}Iteration 0:   log likelihood = {res}-1447.6566
+{txt}Iteration 1:   log likelihood = {res}-1443.8703
+{txt}Iteration 2:   log likelihood = {res}-1443.8683
+
+{txt}Probit regression, reporting marginal effects           Number of obs ={res}   4000
+                                                        {txt}LR chi2({res}1{txt})    ={res}   7.58
+                                                        {txt}Prob > chi2   ={res} 0.0059
+{txt}Log likelihood = {res}-1443.8683                             {txt}Pseudo R2     ={res} 0.0026
+
+{txt}{hline 9}{c TT}{hline 68}
+ desn_cr {c |}{col 17}dF/dx{col 25}Std. Err.{col 40}z{col 45}P>|z|{col 55}x-bar{col 62}[    95% C.I.   ]
+{hline 9}{c +}{hline 68}
+       D*{c |}  {res}    -.028   .0101734    -2.75   0.006        .5  -.047939 -.008061
+{txt}{hline 9}{c +}{hline 68}
+  obs. P {c |}  {res}    .1175
+{txt} pred. P {c |}  {res} .1169067{txt}  (at x-bar)
+{hline 9}{c BT}{hline 68}
+(*) dF/dx is for discrete change of dummy variable from 0 to 1
+{p 4 0 0}z and P>|z| correspond to the test of the underlying coefficient being 0
+
+{com}. 
+. logit desn_cr D
+
+{txt}Iteration 0:   log likelihood = {res}-1447.6566
+{txt}Iteration 1:   log likelihood = {res}-1443.8784
+{txt}Iteration 2:   log likelihood = {res}-1443.8683
+
+{txt}Logistic regression                               Number of obs   = {res}      4000
+                                                  {txt}LR chi2({res}1{txt})      = {res}      7.58
+                                                  {txt}Prob > chi2     = {res}    0.0059
+{txt}Log likelihood = {res}-1443.8683                       {txt}Pseudo R2       = {res}    0.0026
+
+{txt}{hline 13}{c TT}{hline 64}
+     desn_cr {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res}-.2711659   .0988255    -2.74   0.006    -.4648604   -.0774715
+       {txt}_cons {c |}  {res}-1.887761    .066166   -28.53   0.000    -2.017444   -1.758078
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. mfx
+
+{txt}Marginal effects after logit
+      y  = Pr(desn_cr) (predict)
+         = {res} .11677369
+{txt}{hline 9}{c TT}{hline 68}
+variable {c |}{col 17}dy/dx{col 26}Std. Err.{col 40}z{col 45}P>|z|{col 52}[    95% C.I.   ]{col 75}X
+{hline 9}{c +}{hline 68}
+       D*{c |}  {res}    -.028      .01017   -2.75   0.006  -.047939 -.008061        .5
+{txt}{hline 9}{c BT}{hline 68}
+(*) dy/dx is for discrete change of dummy variable from 0 to 1
+
+{com}. 
+. **** Al igual que con la talla para la edad, lo primero que hacemos es una prueba de diferencia de medias sin controlar por otras variables.
+. **** Dado que la variable dependiente es dicotómica, utilizamos un modelo probit y un modelo logit, respectivamente. 
+. **** Es importante recordar que la diferencia entre estos dos modelos es la distribución que suponen para
+. **** la procedencia de los datos. Mientras que el modelo probit supone una distribución normal, logit supone una logística.
+. 
+. **** El comando "dprobit" nos permite identificar los efectos marginales en probabilidad. "mfx" hace lo mismo para el modelo logit.
+. 
+. *-----------------------------------------------*
+. *4. Regresión adicionando variables explicativas
+. *-----------------------------------------------*
+. 
+. 
+. dprobit desn_cr D $X
+
+{txt}Iteration 0:   log likelihood = {res}-1447.6566
+{txt}Iteration 1:   log likelihood = {res}-1423.8892
+{txt}Iteration 2:   log likelihood = {res}-1423.7972
+{txt}Iteration 3:   log likelihood = {res}-1423.7972
+
+{txt}Probit regression, reporting marginal effects           Number of obs ={res}   4000
+                                                        {txt}LR chi2({res}8{txt})    ={res}  47.72
+                                                        {txt}Prob > chi2   ={res} 0.0000
+{txt}Log likelihood = {res}-1423.7972                             {txt}Pseudo R2     ={res} 0.0165
+
+{txt}{hline 9}{c TT}{hline 68}
+ desn_cr {c |}{col 17}dF/dx{col 25}Std. Err.{col 40}z{col 45}P>|z|{col 55}x-bar{col 62}[    95% C.I.   ]
+{hline 9}{c +}{hline 68}
+       D*{c |}  {res}-.0284681   .0100651    -2.82   0.005        .5  -.048195 -.008741
+{txt}personas {c |}  {res}  .010929   .0024446     4.46   0.000     5.136   .006138   .01572
+  {txt}hombre*{c |}  {res} .0030032   .0100547     0.30   0.765    .51625  -.016704   .02271
+ {txt}orden_n {c |}  {res} .0116865   .0153682     0.76   0.447   1.09925  -.018435  .041808
+    {txt}baja*{c |}  {res} .0207448   .0100692     2.06   0.039        .5    .00101   .04048
+{txt}ocupad~e*{c |}  {res} .0076168   .0123024     0.61   0.542    .79775  -.016495  .031729
+{txt}educa_~e {c |}  {res} -.002926   .0013645    -2.14   0.032   6.40325    -.0056 -.000252
+{txt}ingres~e {c |}  {res}-.0001034   .0000644    -1.60   0.109   73.5289   -.00023  .000023
+{txt}{hline 9}{c +}{hline 68}
+  obs. P {c |}  {res}    .1175
+{txt} pred. P {c |}  {res}  .113883{txt}  (at x-bar)
+{hline 9}{c BT}{hline 68}
+(*) dF/dx is for discrete change of dummy variable from 0 to 1
+{p 4 0 0}z and P>|z| correspond to the test of the underlying coefficient being 0
+
+{com}. 
+. logit desn_cr D $X
+
+{txt}Iteration 0:   log likelihood = {res}-1447.6566
+{txt}Iteration 1:   log likelihood = {res}-1424.5692
+{txt}Iteration 2:   log likelihood = {res} -1423.949
+{txt}Iteration 3:   log likelihood = {res}-1423.9486
+
+{txt}Logistic regression                               Number of obs   = {res}      4000
+                                                  {txt}LR chi2({res}8{txt})      = {res}     47.42
+                                                  {txt}Prob > chi2     = {res}    0.0000
+{txt}Log likelihood = {res}-1423.9486                       {txt}Pseudo R2       = {res}    0.0164
+
+{txt}{hline 13}{c TT}{hline 64}
+     desn_cr {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+           D {c |}  {res}-.2681305   .0994012    -2.70   0.007    -.4629532   -.0733078
+    {txt}personas {c |}  {res} .1050214   .0231686     4.53   0.000     .0596117     .150431
+      {txt}hombre {c |}  {res} .0267168    .098932     0.27   0.787    -.1671864    .2206199
+     {txt}orden_n {c |}  {res} .1200175   .1458207     0.82   0.410    -.1657858    .4058208
+        {txt}baja {c |}  {res} .2035689   .0992309     2.05   0.040       .00908    .3980579
+{txt}ocupado_jefe {c |}  {res} .0746175   .1252646     0.60   0.551    -.1708966    .3201315
+  {txt}educa_jefe {c |}  {res} -.028599   .0135068    -2.12   0.034    -.0550719   -.0021262
+{txt}ingresos_h~e {c |}  {res}-.0011171   .0006841    -1.63   0.103    -.0024579    .0002238
+       {txt}_cons {c |}  {res} -2.50544   .2643007    -9.48   0.000     -3.02346   -1.987421
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. mfx
+
+{txt}Marginal effects after logit
+      y  = Pr(desn_cr) (predict)
+         = {res} .11321168
+{txt}{hline 9}{c TT}{hline 68}
+variable {c |}{col 17}dy/dx{col 26}Std. Err.{col 40}z{col 45}P>|z|{col 52}[    95% C.I.   ]{col 75}X
+{hline 9}{c +}{hline 68}
+       D*{c |}  {res}-.0269509      .00996   -2.70   0.007   -.04648 -.007422        .5
+{txt}personas {c |}  {res} .0105436       .0023    4.58   0.000   .006028   .01506     5.136
+  {txt}hombre*{c |}  {res} .0026814      .00993    0.27   0.787  -.016772  .022135    .51625
+ {txt}orden_n {c |}  {res} .0120491      .01463    0.82   0.410  -.016634  .040732   1.09925
+    {txt}baja*{c |}  {res} .0204513      .00996    2.05   0.040   .000939  .039964        .5
+{txt}ocupad~e*{c |}  {res} .0073639      .01215    0.61   0.544  -.016446  .031174    .79775
+{txt}educa_~e {c |}  {res}-.0028712      .00135   -2.12   0.034   -.00552 -.000222   6.40325
+{txt}ingres~e {c |}  {res}-.0001121      .00007   -1.64   0.102  -.000246  .000022   73.5289
+{txt}{hline 9}{c BT}{hline 68}
+(*) dy/dx is for discrete change of dummy variable from 0 to 1
+
+{com}. 
+. 
+. **** Ahora hacemos la diferencia de medias pero controlando por más variables. Entre estas la educación del jefe del hogar,
+. **** el orden de nacimiento del individuo, los ingresos del jefe del hogar, género del individuo, raza del individuo etc.
+. 
+.                                 ****************************************
+.                                 **** Verificación de aleatorización ****
+.                                 ****************************************
+. 
+. dprobit D $X
+
+{txt}Iteration 0:   log likelihood = {res}-2772.5887
+{txt}Iteration 1:   log likelihood = {res}-2770.2976
+{txt}Iteration 2:   log likelihood = {res}-2770.2976
+
+{txt}Probit regression, reporting marginal effects           Number of obs ={res}   4000
+                                                        {txt}LR chi2({res}7{txt})    ={res}   4.58
+                                                        {txt}Prob > chi2   ={res} 0.7108
+{txt}Log likelihood = {res}-2770.2976                             {txt}Pseudo R2     ={res} 0.0008
+
+{txt}{hline 9}{c TT}{hline 68}
+       D {c |}{col 17}dF/dx{col 25}Std. Err.{col 40}z{col 45}P>|z|{col 55}x-bar{col 62}[    95% C.I.   ]
+{hline 9}{c +}{hline 68}
+personas {c |}  {res}-.0012586   .0040959    -0.31   0.759     5.136  -.009286  .006769
+  {txt}hombre*{c |}  {res} .0115823   .0158278     0.73   0.464    .51625   -.01944  .042604
+ {txt}orden_n {c |}  {res} .0288062   .0252374     1.14   0.254   1.09925  -.020658  .078271
+    {txt}baja*{c |}  {res}-.0011442   .0158283    -0.07   0.942        .5  -.032167  .029879
+{txt}ocupad~e*{c |}  {res} .0097187   .0196932     0.49   0.622    .79775  -.028879  .048317
+{txt}educa_~e {c |}  {res} .0030452   .0021364     1.43   0.154   6.40325  -.001142  .007232
+{txt}ingres~e {c |}  {res}-.0000347   .0000968    -0.36   0.720   73.5289  -.000224  .000155
+{txt}{hline 9}{c +}{hline 68}
+  obs. P {c |}  {res}       .5
+{txt} pred. P {c |}  {res} .5000003{txt}  (at x-bar)
+{hline 9}{c BT}{hline 68}
+(*) dF/dx is for discrete change of dummy variable from 0 to 1
+{p 4 0 0}z and P>|z| correspond to the test of the underlying coefficient being 0
+
+{com}. 
+. logit D $X
+
+{txt}Iteration 0:   log likelihood = {res}-2772.5887
+{txt}Iteration 1:   log likelihood = {res}-2770.2968
+{txt}Iteration 2:   log likelihood = {res}-2770.2968
+
+{txt}Logistic regression                               Number of obs   = {res}      4000
+                                                  {txt}LR chi2({res}7{txt})      = {res}      4.58
+                                                  {txt}Prob > chi2     = {res}    0.7106
+{txt}Log likelihood = {res}-2770.2968                       {txt}Pseudo R2       = {res}    0.0008
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+    personas {c |}  {res}-.0050448   .0163964    -0.31   0.758    -.0371812    .0270917
+      {txt}hombre {c |}  {res} .0463558   .0633327     0.73   0.464    -.0777741    .1704856
+     {txt}orden_n {c |}  {res} .1153557   .1010767     1.14   0.254     -.082751    .3134625
+        {txt}baja {c |}  {res}-.0045836   .0633282    -0.07   0.942    -.1287045    .1195373
+{txt}ocupado_jefe {c |}  {res} .0389278   .0788043     0.49   0.621    -.1155257    .1933814
+  {txt}educa_jefe {c |}  {res} .0121869   .0085499     1.43   0.154    -.0045706    .0289444
+{txt}ingresos_h~e {c |}  {res} -.000139   .0003871    -0.36   0.719    -.0008978    .0006197
+       {txt}_cons {c |}  {res}-.2213942   .1729717    -1.28   0.201    -.5604126    .1176242
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. mfx
+
+{txt}Marginal effects after logit
+      y  = Pr(D) (predict)
+         = {res} .50000183
+{txt}{hline 9}{c TT}{hline 68}
+variable {c |}{col 17}dy/dx{col 26}Std. Err.{col 40}z{col 45}P>|z|{col 52}[    95% C.I.   ]{col 75}X
+{hline 9}{c +}{hline 68}
+personas {c |}  {res}-.0012612       .0041   -0.31   0.758  -.009295  .006773     5.136
+  {txt}hombre*{c |}  {res} .0115884      .01583    0.73   0.464   -.01944  .042617    .51625
+ {txt}orden_n {c |}  {res} .0288389      .02527    1.14   0.254  -.020688  .078366   1.09925
+    {txt}baja*{c |}  {res}-.0011459      .01583   -0.07   0.942  -.032176  .029884        .5
+{txt}ocupad~e*{c |}  {res} .0097313       .0197    0.49   0.621  -.028875  .048337    .79775
+{txt}educa_~e {c |}  {res} .0030467      .00214    1.43   0.154  -.001143  .007236   6.40325
+{txt}ingres~e {c |}  {res}-.0000348       .0001   -0.36   0.719  -.000224  .000155   73.5289
+{txt}{hline 9}{c BT}{hline 68}
+(*) dy/dx is for discrete change of dummy variable from 0 to 1
+
+{com}. 
+. **** En este último paso verificamos que en realidad el tratamiento no se asigna de acuerdo
+. **** a características observables de los individuos. Ninguna de las variables es significativa
+. **** en ninguno de los dos modelos y ningún modelo es significativo. Esto nos garantiza la aleatorización
+. **** en la asignación del tratamiento.
+. 
+{txt}end of do-file
+
+{com}. log close
+       {txt}log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Modelo de Diferencias\diferencias_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}31 Aug 2009, 17:30:07
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

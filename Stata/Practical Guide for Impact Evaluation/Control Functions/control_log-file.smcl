@@ -1,0 +1,357 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+       log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Funciones de Control\control_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 3 Sep 2009, 11:45:26
+
+{com}. do "C:\Users\Rodrigo\AppData\Local\Temp\STD0i000000.tmp"
+{txt}
+{com}. *-------------------------------------*
+. *      Funciones de Control           *
+. *-------------------------------------*
+. 
+. *----------------------------------------------------------------------------------------------------------------*
+. *El programa que se utiliza para funciones de control es "treatreg"
+. *----------------------------------------------------------------------------------------------------------------*
+. 
+. **** En este caso se quiere identificar el impacto del programa "canasta" sobre la talla para la edad de los individuos.
+. **** Sin embargo, se sospecha que la decisión de asistir depende del nivel de capital social de los principales respondables
+. **** de los niños. Dado que no es posible observar este indicador directamente, lo óptimo es utilizar funciones de control.
+. 
+. **** 1. Estimación mediante Mínimos Cuadrados Ordinarios
+. 
+. ttest ha_nchs, by(D)
+
+{txt}Two-sample t test with equal variances
+{hline 9}{c TT}{hline 68}
+   Group{col 10}{c |}{col 16}Obs{col 27}Mean{col 35}Std. Err.{col 47}Std. Dev.{col 59}[95% Conf. Interval]
+{hline 9}{c +}{hline 68}
+       0 {c |}{res}{col 12}   2048{col 22}-.5030328{col 34} .0045824{col 46} .2073759{col 58}-.5120195{col 70}-.4940461
+       {txt}1 {c |}{res}{col 12}   1952{col 22}-.1744762{col 34} .0060764{col 46} .2684624{col 58} -.186393{col 70}-.1625593
+{txt}{hline 9}{c +}{hline 68}
+combined {c |}{res}{col 12}   4000{col 22}-.3426972{col 34} .0045868{col 46} .2900925{col 58}-.3516898{col 70}-.3337046
+{txt}{hline 9}{c +}{hline 68}
+    diff {c |}{res}{col 22}-.3285566{col 34} .0075645{col 58}-.3433874{col 70}-.3137259
+{txt}{hline 9}{c BT}{hline 68}
+    diff = mean({res}0{txt}) - mean({res}1{txt})                                      t = {res}-43.4337
+{txt}Ho: diff = 0                                     degrees of freedom = {res}    3998
+
+    {txt}Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
+ Pr(T < t) = {res}0.0000         {txt}Pr(|T| > |t|) = {res}0.0000          {txt}Pr(T > t) = {res}1.0000
+{txt}
+{com}. 
+. **** Una prueba de diferencia de medias nos muestra que los individuos que participan en el programa tienen un promedio de talla para 
+. **** la edad debajo de los individuos que no participan en el programa. Veamos qué nos permite afirmar una regresión por mínimos cuadrados ordinarios. 
+. 
+. global X "educa_jefe ocupado_jefe ingresos_hogar_jefe "
+{txt}
+{com}. 
+. 
+. reg ha_nchs D $X 
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}    4000
+{txt}{hline 13}{char +}{hline 30}           F(  4,  3995) ={res}  476.31
+    {txt}   Model {char |} {res} 108.667982     4  27.1669956           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 227.862588  3995  .057036943           {txt}R-squared     = {res} 0.3229
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.3222
+    {txt}   Total {char |} {res} 336.530571  3999  .084153681           {txt}Root MSE      = {res} .23882
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           D {c |}  {res} .3303186     .00758    43.58   0.000     .3154575    .3451797
+{txt}  educa_jefe {c |}  {res}     .003   .0009857     3.04   0.002     .0010674    .0049326
+{txt}ocupado_jefe {c |}  {res}-.0242852    .009838    -2.47   0.014    -.0435733   -.0049972
+{txt}ingresos_h~e {c |}  {res}-.0000251   .0000435    -0.58   0.563    -.0001104    .0000601
+{txt}       _cons {c |}  {res}-.5021399   .0106944   -46.95   0.000     -.523107   -.4811728
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** Según los resultados de la estimación por mínimos cuadrados ordinarios, el programa canasta tiene un efecto negativo sobre la
+. **** talla para la edad de los participantes. Sin embargo, no estamos controlando por el hecho de que la decisión de participación
+. **** depende del nivel de capital social con el que cuentan los principales responsables de los niños, variable que también
+. **** afecta el nivel de talla para la edad de los individuos. En este punto utilizaremos el comando "treatreg".
+. 
+. **** 2. Estimación mediante el comando Treatreg
+. 
+. **** El comando treatreg incorpora una serie de estimaciones para evaluación de programas cuando la decisión de participar en el programa 
+. **** está determinada por una variable no observable que a su vez determina la variable de interés del programa. Treatreg estima las ecuaciones:
+. 
+. **** Y=b0D+b2X+u
+. **** D=aZ+v
+. 
+. **** Donde Y es la variable de interés para la evaluación del programa, X es un vector de características observables de los individuos,
+. **** D es una variable dicotómica que nos indica si el individuo participa o no en el programa, Z es un vector de características observables
+. **** que determinan la probabilidad de participar en el programa y tanto u como v son términos de error. La estructura del programa es la siguiente:
+. 
+. **** treatreg Y X, treat(D = Z) 
+. 
+. **** Al utilizar esta versión básica del programa con las variables de la base de datos, tenemos:
+. 
+. treatreg ha_nchs  $X, treat(D=$X of_op distancia)
+
+{txt}Iteration 0:{col 16}log likelihood = {res}-2637.3161{txt}  
+Iteration 1:{col 16}log likelihood = {res}-2637.1498{txt}  
+Iteration 2:{col 16}log likelihood = {res}-2637.1475{txt}  
+Iteration 3:{col 16}log likelihood = {res}-2637.1475{txt}  
+
+Treatment-effects model -- MLE{col 51}Number of obs{col 67}= {res}      4000
+{txt}{col 51}Wald chi2({res}4{txt}){col 67}= {res}     43.51
+{txt}Log likelihood = {res}-2637.1475{txt}{col 51}Prob > chi2{col 67}= {res}    0.0000
+
+{col 1}{text}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 14}{text}{c |}      Coef.{col 26}   Std. Err.{col 37}      z{col 46}   P>|z|{col 55}    [95% Conf. Interval]
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{result}ha_nchs     {col 14}{text}{c |}
+{col 1}{text}  educa_jefe{col 14}{c |}{result}{space 2} .0026954{col 26}{space 2} .0010125{col 37}{space 1}    2.66{col 46}{space 3}0.008{col 55}{space 3} .0007109{col 67}{space 3} .0046799
+{col 1}{text}ocupado_jefe{col 14}{c |}{result}{space 2} -.015154{col 26}{space 2} .0105939{col 37}{space 1}   -1.43{col 46}{space 3}0.153{col 55}{space 3}-.0359176{col 67}{space 3} .0056096
+{col 1}{text}ingresos_h~e{col 14}{c |}{result}{space 2}-6.47e-06{col 26}{space 2} .0000449{col 37}{space 1}   -0.14{col 46}{space 3}0.885{col 55}{space 3}-.0000945{col 67}{space 3} .0000816
+{col 1}{text}           D{col 14}{c |}{result}{space 2} .2306015{col 26}{space 2} .0376373{col 37}{space 1}    6.13{col 46}{space 3}0.000{col 55}{space 3} .1568338{col 67}{space 3} .3043693
+{col 1}{text}       _cons{col 14}{c |}{result}{space 2}-.4602233{col 26}{space 2} .0189447{col 37}{space 1}  -24.29{col 46}{space 3}0.000{col 55}{space 3}-.4973543{col 67}{space 3}-.4230923
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{result}D           {col 14}{text}{c |}
+{col 1}{text}  educa_jefe{col 14}{c |}{result}{space 2}-.0076233{col 26}{space 2} .0052429{col 37}{space 1}   -1.45{col 46}{space 3}0.146{col 55}{space 3}-.0178991{col 67}{space 3} .0026525
+{col 1}{text}ocupado_jefe{col 14}{c |}{result}{space 2} .2212016{col 26}{space 2}  .052308{col 37}{space 1}    4.23{col 46}{space 3}0.000{col 55}{space 3} .1186798{col 67}{space 3} .3237235
+{col 1}{text}ingresos_h~e{col 14}{c |}{result}{space 2}  .000508{col 26}{space 2} .0002309{col 37}{space 1}    2.20{col 46}{space 3}0.028{col 55}{space 3} .0000554{col 67}{space 3} .0009606
+{col 1}{text}       of_op{col 14}{c |}{result}{space 2} .0862736{col 26}{space 2}  .009768{col 37}{space 1}    8.83{col 46}{space 3}0.000{col 55}{space 3} .0671286{col 67}{space 3} .1054186
+{col 1}{text}   distancia{col 14}{c |}{result}{space 2}-.0001259{col 26}{space 2} .0000177{col 37}{space 1}   -7.11{col 46}{space 3}0.000{col 55}{space 3}-.0001607{col 67}{space 3}-.0000912
+{col 1}{text}       _cons{col 14}{c |}{result}{space 2}-.1668645{col 26}{space 2} .0697852{col 37}{space 1}   -2.39{col 46}{space 3}0.017{col 55}{space 3}-.3036411{col 67}{space 3} -.030088
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{text}     /athrho{col 14}{c |}{result}{space 2} .2687221{col 27}{space 1} .0996296{col 39}   2.70{col 47}{space 2}0.007{col 55}{space 3} .0734516{col 67}{space 3} .4639926
+{col 1}{text}    /lnsigma{col 14}{c |}{result}{space 2} -1.41145{col 27}{space 1} .0192509{col 39} -73.32{col 47}{space 2}0.000{col 55}{space 3}-1.449181{col 67}{space 3}-1.373719
+{col 1}{text}{hline 13}{c +}{hline 12}{hline 12}{hline 8}{hline 8}{hline 12}{hline 12}
+{col 1}{text}         rho{col 14}{c |}{result}{space 2} .2624353{col 27}{space 1} .0927679{col 55}{space 3} .0733198{col 67}{space 3} .4333327
+{col 1}{text}       sigma{col 14}{c |}{result}{space 2} .2437896{col 27}{space 1} .0046932{col 55}{space 3} .2347625{col 67}{space 3} .2531638
+{col 1}{text}      lambda{col 14}{c |}{result}{space 2}  .063979{col 27}{space 1} .0236295{col 55}{space 3} .0176661{col 67}{space 3} .1102919
+{col 1}{text}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+LR test of indep. eqns. (rho = 0):{col 38}chi2({res}1{txt}) = {res}    6.89{col 59}{txt}Prob > chi2 = {res}0.0087
+{txt}{hline 78}
+
+{com}. 
+. **** El output obtenido es el siguiente:
+. 
+. 
+. 
+. **** Iteration 0:   log likelihood = -2637.3161  
+. **** Iteration 1:   log likelihood = -2637.1498  
+. **** Iteration 2:   log likelihood = -2637.1475  
+. **** Iteration 3:   log likelihood = -2637.1475  
+. **** 
+. **** Treatment-effects model -- MLE                    Number of obs   =       4000
+. ****                                                   Wald chi2(4)    =      43.51
+. **** Log likelihood = -2637.1475                       Prob > chi2     =     0.0000
+. **** 
+. **** ------------------------------------------------------------------------------
+. ****              |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+. **** -------------+----------------------------------------------------------------
+. **** ha_nchs      |
+. ****   educa_jefe |   .0026954   .0010125     2.66   0.008     .0007109    .0046799
+. **** ocupado_jefe |   -.015154   .0105939    -1.43   0.153    -.0359176    .0056096
+. **** ingresos_h~e |  -6.47e-06   .0000449    -0.14   0.885    -.0000945    .0000816
+. ****            D |   .2306015   .0376373     6.13   0.000     .1568338    .3043693
+. ****        _cons |  -.4602233   .0189447   -24.29   0.000    -.4973543   -.4230923
+. **** -------------+----------------------------------------------------------------
+. **** D            |
+. ****   educa_jefe |  -.0076233   .0052429    -1.45   0.146    -.0178991    .0026525
+. **** ocupado_jefe |   .2212016    .052308     4.23   0.000     .1186798    .3237235
+. **** ingresos_h~e |    .000508   .0002309     2.20   0.028     .0000554    .0009606
+. ****        of_op |   .0862736    .009768     8.83   0.000     .0671286    .1054186
+. ****    distancia |  -.0001259   .0000177    -7.11   0.000    -.0001607   -.0000912
+. ****        _cons |  -.1668645   .0697852    -2.39   0.017    -.3036411    -.030088
+. **** -------------+----------------------------------------------------------------
+. ****      /athrho |   .2687221   .0996296     2.70   0.007     .0734516    .4639926
+. ****     /lnsigma |   -1.41145   .0192509   -73.32   0.000    -1.449181   -1.373719
+. **** -------------+----------------------------------------------------------------
+. ****          rho |   .2624353   .0927679                      .0733198    .4333327
+. ****        sigma |   .2437896   .0046932                      .2347625    .2531638
+. ****       lambda |    .063979   .0236295                      .0176661    .1102919
+. **** ------------------------------------------------------------------------------
+. **** LR test of indep. eqns. (rho = 0):   chi2(1) =     6.89   Prob > chi2 = 0.0087
+. **** ------------------------------------------------------------------------------
+. 
+. 
+. **** A continuación haremos una breve explicación sobre los resultados arrojados por el programa:
+. 
+. **** 3. Explicación del programa
+. 
+. **** 3.1 Número de iteraciones
+. 
+. **** Como podemos observar en la parte superior, encontramos un resultado de la forma "Iteration 3:   log likelihood = -2637.1475"
+. **** Esto nos indica que se hicieron tres iteraciones para la estimación y en la final, la función de verosimilitud evaluada en los parámetros
+. **** toma el valor de 2637.1475.
+. 
+. **** 3.2 Metodología de estimación.
+. 
+. **** Inmediatamente después del número de iteraciones podemos ver la información "Treatment-effects model -- MLE". 
+. **** Esto nos indica que la estimación se hizo por máxima verosimilitud (Maximum Likelihood). Sin embargo, si se desea
+. **** también se puede llevar a cabo la estimación en dos etapas utilizando la opción "twostep". A continuación presentamos un ejemplo:
+. 
+. 
+. treatreg ha_nchs  $X, treat(D=$X of_op distancia) twostep
+
+{txt}Treatment-effects model -- two-step estimates   Number of obs      = {res}     4000
+
+                                                {txt}Wald chi2({res}7{txt})       = {res}    54.20
+                                                {txt}Prob > chi2        =    {res}0.0000
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+{res}ha_nchs      {txt}{c |}
+  educa_jefe {c |}  {res} .0026363   .0010238     2.57   0.010     .0006296     .004643
+{txt}ocupado_jefe {c |}  {res}-.0133809   .0108928    -1.23   0.219    -.0347305    .0079686
+{txt}ingresos_h~e {c |}  {res}-2.85e-06   .0000455    -0.06   0.950    -.0000921    .0000864
+           {txt}D {c |}  {res} .2112388   .0443951     4.76   0.000      .124226    .2982516
+       {txt}_cons {c |}  {res} -.452084   .0214191   -21.11   0.000    -.4940647   -.4101033
+{txt}{hline 13}{c +}{hline 64}
+{res}D            {txt}{c |}
+  educa_jefe {c |}  {res}-.0075863   .0052368    -1.45   0.147    -.0178501    .0026776
+{txt}ocupado_jefe {c |}  {res} .2225243   .0523696     4.25   0.000     .1198818    .3251668
+{txt}ingresos_h~e {c |}  {res} .0005128   .0002323     2.21   0.027     .0000575    .0009681
+       {txt}of_op {c |}  {res} .0852646   .0099093     8.60   0.000     .0658427    .1046865
+   {txt}distancia {c |}  {res}-.0001246    .000018    -6.91   0.000      -.00016   -.0000893
+       {txt}_cons {c |}  {res}-.1716218    .070534    -2.43   0.015    -.3098659   -.0333777
+{txt}{hline 13}{c +}{hline 64}
+{res}hazard       {txt}{c |}
+      lambda {c |}  {res} .0763815   .0280062     2.73   0.006     .0214904    .1312727
+{txt}{hline 13}{c +}{hline 64}
+         rho {c |} {res}   0.31057
+{txt}       sigma {c |} {res} .24593646
+{txt}      lambda {c |} {res} .07638155   .0280062
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. **** 3.3 Significancia global del modelo
+. 
+. **** En la parte superior derecha del resultado de la estimación podemos ver "Wald chi2(4)    =      54.20" y "Prob > chi2     =     0.0000".
+. **** Esta es una prueba de significancia global del modelo. Lo que se hace es comparar 
+. **** el modelo donde se incluyen todas las variables con un modelo en el que sólo hay una constante. Esta prueba es asintóticamente
+. **** un test de Wald que se distribuye chi-cuadrado. En este caso el valor del estadístico es 54.20 y por lo tanto 
+. **** el modelo es significativo a un nivel de 100% de confianza. Si se desea ver el modelo donde sólo se incluye una constante
+. **** se debe seleccionar la opción "noskip".
+. 
+. treatreg ha_nchs  $X, treat(D=$X of_op distancia) noskip
+
+{txt}Fitting constant-only model:
+
+Iteration 0:{col 16}log likelihood = {res} -2738.124{txt}  
+Iteration 1:{col 16}log likelihood = {res}-2726.8788{txt}  
+Iteration 2:{col 16}log likelihood = {res}-2724.0844{txt}  
+Iteration 3:{col 16}log likelihood = {res} -2723.757{txt}  
+Iteration 4:{col 16}log likelihood = {res} -2723.453{txt}  
+Iteration 5:{col 16}log likelihood = {res}-2723.4281{txt}  
+Iteration 6:{col 16}log likelihood = {res}-2723.4183{txt}  
+Iteration 7:{col 16}log likelihood = {res}-2723.4177{txt}  
+Iteration 8:{col 16}log likelihood = {res}-2723.4177{txt}  
+
+Fitting full model:
+
+Iteration 0:{col 16}log likelihood = {res}-2637.3161{txt}  
+Iteration 1:{col 16}log likelihood = {res}-2637.1498{txt}  
+Iteration 2:{col 16}log likelihood = {res}-2637.1475{txt}  
+Iteration 3:{col 16}log likelihood = {res}-2637.1475{txt}  
+
+Treatment-effects model -- MLE{col 51}Number of obs{col 67}= {res}      4000
+{txt}{col 51}LR chi2({res}8{txt}){col 67}= {res}    172.54
+{txt}Log likelihood = {res}-2637.1475{txt}{col 51}Prob > chi2{col 67}= {res}    0.0000
+
+{col 1}{text}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 14}{text}{c |}      Coef.{col 26}   Std. Err.{col 37}      z{col 46}   P>|z|{col 55}    [95% Conf. Interval]
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{result}ha_nchs     {col 14}{text}{c |}
+{col 1}{text}  educa_jefe{col 14}{c |}{result}{space 2} .0026954{col 26}{space 2} .0010125{col 37}{space 1}    2.66{col 46}{space 3}0.008{col 55}{space 3} .0007109{col 67}{space 3} .0046799
+{col 1}{text}ocupado_jefe{col 14}{c |}{result}{space 2} -.015154{col 26}{space 2} .0105939{col 37}{space 1}   -1.43{col 46}{space 3}0.153{col 55}{space 3}-.0359176{col 67}{space 3} .0056096
+{col 1}{text}ingresos_h~e{col 14}{c |}{result}{space 2}-6.47e-06{col 26}{space 2} .0000449{col 37}{space 1}   -0.14{col 46}{space 3}0.885{col 55}{space 3}-.0000945{col 67}{space 3} .0000816
+{col 1}{text}           D{col 14}{c |}{result}{space 2} .2306015{col 26}{space 2} .0376373{col 37}{space 1}    6.13{col 46}{space 3}0.000{col 55}{space 3} .1568338{col 67}{space 3} .3043693
+{col 1}{text}       _cons{col 14}{c |}{result}{space 2}-.4602233{col 26}{space 2} .0189447{col 37}{space 1}  -24.29{col 46}{space 3}0.000{col 55}{space 3}-.4973543{col 67}{space 3}-.4230923
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{result}D           {col 14}{text}{c |}
+{col 1}{text}  educa_jefe{col 14}{c |}{result}{space 2}-.0076233{col 26}{space 2} .0052429{col 37}{space 1}   -1.45{col 46}{space 3}0.146{col 55}{space 3}-.0178991{col 67}{space 3} .0026525
+{col 1}{text}ocupado_jefe{col 14}{c |}{result}{space 2} .2212016{col 26}{space 2}  .052308{col 37}{space 1}    4.23{col 46}{space 3}0.000{col 55}{space 3} .1186798{col 67}{space 3} .3237235
+{col 1}{text}ingresos_h~e{col 14}{c |}{result}{space 2}  .000508{col 26}{space 2} .0002309{col 37}{space 1}    2.20{col 46}{space 3}0.028{col 55}{space 3} .0000554{col 67}{space 3} .0009606
+{col 1}{text}       of_op{col 14}{c |}{result}{space 2} .0862736{col 26}{space 2}  .009768{col 37}{space 1}    8.83{col 46}{space 3}0.000{col 55}{space 3} .0671286{col 67}{space 3} .1054186
+{col 1}{text}   distancia{col 14}{c |}{result}{space 2}-.0001259{col 26}{space 2} .0000177{col 37}{space 1}   -7.11{col 46}{space 3}0.000{col 55}{space 3}-.0001607{col 67}{space 3}-.0000912
+{col 1}{text}       _cons{col 14}{c |}{result}{space 2}-.1668645{col 26}{space 2} .0697852{col 37}{space 1}   -2.39{col 46}{space 3}0.017{col 55}{space 3}-.3036411{col 67}{space 3} -.030088
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{text}     /athrho{col 14}{c |}{result}{space 2} .2687221{col 27}{space 1} .0996296{col 39}   2.70{col 47}{space 2}0.007{col 55}{space 3} .0734516{col 67}{space 3} .4639926
+{col 1}{text}    /lnsigma{col 14}{c |}{result}{space 2} -1.41145{col 27}{space 1} .0192509{col 39} -73.32{col 47}{space 2}0.000{col 55}{space 3}-1.449181{col 67}{space 3}-1.373719
+{col 1}{text}{hline 13}{c +}{hline 12}{hline 12}{hline 8}{hline 8}{hline 12}{hline 12}
+{col 1}{text}         rho{col 14}{c |}{result}{space 2} .2624353{col 27}{space 1} .0927679{col 55}{space 3} .0733198{col 67}{space 3} .4333327
+{col 1}{text}       sigma{col 14}{c |}{result}{space 2} .2437896{col 27}{space 1} .0046932{col 55}{space 3} .2347625{col 67}{space 3} .2531638
+{col 1}{text}      lambda{col 14}{c |}{result}{space 2}  .063979{col 27}{space 1} .0236295{col 55}{space 3} .0176661{col 67}{space 3} .1102919
+{col 1}{text}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+LR test of indep. eqns. (rho = 0):{col 38}chi2({res}1{txt}) = {res}    6.89{col 59}{txt}Prob > chi2 = {res}0.0087
+{txt}{hline 78}
+
+{com}. 
+. **** Cuando se hace una estimación mediante máxima verosimilitud se comparan los valores de la función de verosimilitud,
+. **** la metodología es diferente cuando se hace en dos pasos. 
+. 
+. **** 3.4 Prueba de correlación entre "u" y "v"
+. 
+. **** En la parte inferior del output podemos ver: "LR test of indep. eqns. (rho = 0):   chi2(1) =    6.89   Prob > chi2 = 0.0087"
+. **** Esta es una prueba de hipótesis donde la hipótesis nula es que la covarianza entre los términos de error "u" y "v" es cero.
+. **** En este caso la prueba se rechaza, es decir hay una correlación negativa entre los errores. Dado que el estadístico de prueba
+. **** se construye utilizando los valores de la función de verosimilitud en las dos ecuaciones, esta prueba solo se presenta cuando
+. **** la estimación se hace por máxima verosimilitud. 
+. 
+. **** 3.5 Sigma, rho y lambda
+. 
+. **** Sigma es el valor estimado de la varianza del término de error "u". rho es el coeficiente de correlación entre 
+. **** los errores "u" y "v" y lambda es el producto entre sigma y rho.
+. 
+. **** 3.6 La razón de mills. 
+. 
+. **** Dado que, según se presenta en la teoría de funciones de control, una parte fundamental de la ecuación a estimar es 
+. **** el inverso de la razón de mills para cada observación, también llamada "hazard ratio", existe una opción que nos permite
+. **** predecir lo valores de esta función para cada observación:
+. 
+. treatreg ha_nchs  $X, treat(D=$X of_op distancia) hazard(var)
+
+{txt}Iteration 0:{col 16}log likelihood = {res}-2637.3161{txt}  
+Iteration 1:{col 16}log likelihood = {res}-2637.1498{txt}  
+Iteration 2:{col 16}log likelihood = {res}-2637.1475{txt}  
+Iteration 3:{col 16}log likelihood = {res}-2637.1475{txt}  
+
+Treatment-effects model -- MLE{col 51}Number of obs{col 67}= {res}      4000
+{txt}{col 51}Wald chi2({res}4{txt}){col 67}= {res}     43.51
+{txt}Log likelihood = {res}-2637.1475{txt}{col 51}Prob > chi2{col 67}= {res}    0.0000
+
+{col 1}{text}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 14}{text}{c |}      Coef.{col 26}   Std. Err.{col 37}      z{col 46}   P>|z|{col 55}    [95% Conf. Interval]
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{result}ha_nchs     {col 14}{text}{c |}
+{col 1}{text}  educa_jefe{col 14}{c |}{result}{space 2} .0026954{col 26}{space 2} .0010125{col 37}{space 1}    2.66{col 46}{space 3}0.008{col 55}{space 3} .0007109{col 67}{space 3} .0046799
+{col 1}{text}ocupado_jefe{col 14}{c |}{result}{space 2} -.015154{col 26}{space 2} .0105939{col 37}{space 1}   -1.43{col 46}{space 3}0.153{col 55}{space 3}-.0359176{col 67}{space 3} .0056096
+{col 1}{text}ingresos_h~e{col 14}{c |}{result}{space 2}-6.47e-06{col 26}{space 2} .0000449{col 37}{space 1}   -0.14{col 46}{space 3}0.885{col 55}{space 3}-.0000945{col 67}{space 3} .0000816
+{col 1}{text}           D{col 14}{c |}{result}{space 2} .2306015{col 26}{space 2} .0376373{col 37}{space 1}    6.13{col 46}{space 3}0.000{col 55}{space 3} .1568338{col 67}{space 3} .3043693
+{col 1}{text}       _cons{col 14}{c |}{result}{space 2}-.4602233{col 26}{space 2} .0189447{col 37}{space 1}  -24.29{col 46}{space 3}0.000{col 55}{space 3}-.4973543{col 67}{space 3}-.4230923
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{result}D           {col 14}{text}{c |}
+{col 1}{text}  educa_jefe{col 14}{c |}{result}{space 2}-.0076233{col 26}{space 2} .0052429{col 37}{space 1}   -1.45{col 46}{space 3}0.146{col 55}{space 3}-.0178991{col 67}{space 3} .0026525
+{col 1}{text}ocupado_jefe{col 14}{c |}{result}{space 2} .2212016{col 26}{space 2}  .052308{col 37}{space 1}    4.23{col 46}{space 3}0.000{col 55}{space 3} .1186798{col 67}{space 3} .3237235
+{col 1}{text}ingresos_h~e{col 14}{c |}{result}{space 2}  .000508{col 26}{space 2} .0002309{col 37}{space 1}    2.20{col 46}{space 3}0.028{col 55}{space 3} .0000554{col 67}{space 3} .0009606
+{col 1}{text}       of_op{col 14}{c |}{result}{space 2} .0862736{col 26}{space 2}  .009768{col 37}{space 1}    8.83{col 46}{space 3}0.000{col 55}{space 3} .0671286{col 67}{space 3} .1054186
+{col 1}{text}   distancia{col 14}{c |}{result}{space 2}-.0001259{col 26}{space 2} .0000177{col 37}{space 1}   -7.11{col 46}{space 3}0.000{col 55}{space 3}-.0001607{col 67}{space 3}-.0000912
+{col 1}{text}       _cons{col 14}{c |}{result}{space 2}-.1668645{col 26}{space 2} .0697852{col 37}{space 1}   -2.39{col 46}{space 3}0.017{col 55}{space 3}-.3036411{col 67}{space 3} -.030088
+{col 1}{text}{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+{col 1}{text}     /athrho{col 14}{c |}{result}{space 2} .2687221{col 27}{space 1} .0996296{col 39}   2.70{col 47}{space 2}0.007{col 55}{space 3} .0734516{col 67}{space 3} .4639926
+{col 1}{text}    /lnsigma{col 14}{c |}{result}{space 2} -1.41145{col 27}{space 1} .0192509{col 39} -73.32{col 47}{space 2}0.000{col 55}{space 3}-1.449181{col 67}{space 3}-1.373719
+{col 1}{text}{hline 13}{c +}{hline 12}{hline 12}{hline 8}{hline 8}{hline 12}{hline 12}
+{col 1}{text}         rho{col 14}{c |}{result}{space 2} .2624353{col 27}{space 1} .0927679{col 55}{space 3} .0733198{col 67}{space 3} .4333327
+{col 1}{text}       sigma{col 14}{c |}{result}{space 2} .2437896{col 27}{space 1} .0046932{col 55}{space 3} .2347625{col 67}{space 3} .2531638
+{col 1}{text}      lambda{col 14}{c |}{result}{space 2}  .063979{col 27}{space 1} .0236295{col 55}{space 3} .0176661{col 67}{space 3} .1102919
+{col 1}{text}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 9}{hline 12}{hline 12}
+LR test of indep. eqns. (rho = 0):{col 38}chi2({res}1{txt}) = {res}    6.89{col 59}{txt}Prob > chi2 = {res}0.0087
+{txt}{hline 78}
+
+{com}. 
+{txt}end of do-file
+
+{com}. log close
+       {txt}log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Funciones de Control\control_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 3 Sep 2009, 11:45:54
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

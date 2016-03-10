@@ -1,0 +1,3114 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+       log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Regresión discontinua\discontinuity_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 3 Sep 2009, 11:22:39
+
+{com}. do "C:\Users\Rodrigo\AppData\Local\Temp\STD0i000000.tmp"
+{txt}
+{com}. *-------------------------------------*
+. *      Regression discontinuity       *
+. *-------------------------------------*
+. 
+. *----------------------------------------------------------------------------------------------------------------*
+. *En regression discontinuity  el programa "rd".
+. *Dado que el paquete básico de Stata no contiene el comando "psmatch2" es necesario instalarlo:
+. 
+. **** Instalación "psmatch2"
+. ssc install rd, replace
+{txt}checking {hilite:rd} consistency and verifying not already installed...
+all files already exist and are up to date.
+
+{com}. 
+. *Sobre la base de datos: Hay dos observaciones para la variable talla para la edad. Tenemos el puntaje de sisben
+. * que va de 0 a 30. Se supone que los individuos con un puntaje sisben inferior a 10 tienen una mayor probabilidad
+. * de participar en el programa. 
+. *----------------------------------------------------------------------------------------------------------------*
+. 
+. **** En este do-file presentaremos las cuatro metodologías presentadas en el texto. Estas son, Imbens Lemieux, Kernel Triangular,
+. **** Metodología de Imbens y Lemieux con Kernel triangular y finalmente la metodología propuesta por el programa "RD".
+. **** Como se explica en el documento, los resultados de las estimaciones dependen del ancho de banda utilizado. Por
+. **** esta razón se harán estimativos para todas las metodologías y se almacenarán en una matriz de manera que
+. **** al final tendremos resultados de todas las metodologías para todos los anchos de banda posibles. 
+. 
+. 
+. **** I. Metodología de Imbens y Lemieux
+. 
+. **** Los resultados de la metodología Imbens y Lemieux se almacenarán en el vector IL.
+. 
+. mat IL=J(10,1,0)
+{txt}
+{com}. 
+. **** Lo que hacemos es generar un ciclo para el ancho de banda. Hacemos estimativos para anchos de banda 
+. **** desde uno hasta diez. Debemos hacer cuatro regresiones para cada ancho de banda. Para la talla para la edad
+. **** corremos una regresión a la izquierda y otra a la derecha. Lo mismo hacemos para la probabilidad de participar
+. **** en el programa. Luego de correr cada regresión, el resultado de la constante queda guardado como un escalar. 
+. **** El subíndice utilizado para identificar la constante de la regresión del tratamiento por la izquierda es alfa_`h'l
+. **** donde `h' es el ancho de banda. Para las regresiones que se corren a la derecha, las constantes quedan guardadas como 
+. **** alfa_`h'r. Cuando hacemos las regresiones por izquierda y derecha para estimar la probabilidad de participación en el programa
+. **** las constantes se guardan con el nombre alfa_d`h'l y alfa_d`h'r respectivamente. Finalmente, se construye el estimador
+. **** del efecto del programa mediante la relación de las diferencias de las constantes:
+. **** Efecto=[alfa_`h'l-alfa_`h'r]/[alfa_d`h'l -alfa_d`h'r].
+. 
+. **** Debemos generar una variable que normalice el puntaje de sisben:
+. 
+. gen sisbenalin=sisben-10
+{txt}
+{com}. 
+. local h=1
+{txt}
+{com}. while `h'<=10 {c -(}
+{txt}  2{com}.         display " Regresión talla para la edad por izquierda. Ancho de banda `h'"
+{txt}  3{com}.         reg ha_nchs sisbenalin if  sisben<10 & sisben>=10-`h'
+{txt}  4{com}.         mat define A_10=e(b)
+{txt}  5{com}.         scalar define alfa_`h'l=el(A_10,1,2)
+{txt}  6{com}.         mat drop A_10
+{txt}  7{com}.         
+.         display " Regresión talla para la edad por derecha. Ancho de banda `h'"
+{txt}  8{com}.         reg ha_nchs sisbenalin if  sisben>=10 & sisben<=10+`h'
+{txt}  9{com}.         mat define A_10=e(b)
+{txt} 10{com}.         scalar define alfa_`h'r=el(A_10,1,2)
+{txt} 11{com}.         mat drop A_10
+{txt} 12{com}. 
+.         display "Regresión talla para probabilidad de participación por izquierda. Ancho de banda `h'"
+{txt} 13{com}.         reg D sisbenalin if  sisben<10 & sisben>=10-`h'
+{txt} 14{com}.         mat define A_10=e(b)
+{txt} 15{com}.         scalar define alfa_d`h'l=el(A_10,1,2)
+{txt} 16{com}.         mat drop A_10
+{txt} 17{com}. 
+.         display "Regresión talla para probabilidad de participación por derecha. Ancho de banda `h'"
+{txt} 18{com}.         reg D sisbenalin if  sisben>=10 & sisben<=10+`h'
+{txt} 19{com}.         mat define A_10=e(b)
+{txt} 20{com}.         scalar define alfa_d`h'r=el(A_10,1,2)
+{txt} 21{com}.         mat drop A_10
+{txt} 22{com}. 
+.         mat IL[`h',1]=(alfa_`h'l-alfa_`h'r)/(alfa_d`h'l-alfa_d`h'r)
+{txt} 23{com}. 
+. local h=`h'+1
+{txt} 24{com}. {c )-}
+ Regresión talla para la edad por izquierda. Ancho de banda 1
+
+      {txt}Source {c |}       SS       df       MS              Number of obs ={res}     298
+{txt}{hline 13}{char +}{hline 30}           F(  0,   297) ={res}    0.00
+    {txt}   Model {char |} {res}          0     0           .           {txt}Prob > F      = {res}      .
+    {txt}Residual {char |} {res} 104.370944   297   .35141732           {txt}R-squared     = {res} 0.0000
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0000
+    {txt}   Total {char |} {res} 104.370944   297   .35141732           {txt}Root MSE      = {res}  .5928
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .4515047   .0343402    13.15   0.000     .3839237    .5190858
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 1
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     222
+{txt}{hline 13}{char +}{hline 30}           F(  1,   220) ={res}    0.05
+    {txt}   Model {char |} {res} .016694546     1  .016694546           {txt}Prob > F      = {res} 0.8239
+    {txt}Residual {char |} {res} 73.9519119   220  .336145054           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0043
+    {txt}   Total {char |} {res} 73.9686065   221  .334699577           {txt}Root MSE      = {res} .57978
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0204756   .0918785     0.22   0.824    -.1605989    .2015502
+{txt}       _cons {c |}  {res} .3641602   .0444671     8.19   0.000     .2765241    .4517962
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 1
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     298
+{txt}{hline 13}{char +}{hline 30}           F(  0,   297) ={res}    0.00
+    {txt}   Model {char |} {res}          0     0           .           {txt}Prob > F      = {res}      .
+    {txt}Residual {char |} {res} 68.8590604   297  .231848688           {txt}R-squared     = {res} 0.0000
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0000
+    {txt}   Total {char |} {res} 68.8590604   297  .231848688           {txt}Root MSE      = {res} .48151
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .6375839   .0278929    22.86   0.000     .5826911    .6924767
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 1
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     222
+{txt}{hline 13}{char +}{hline 30}           F(  1,   220) ={res}    2.36
+    {txt}   Model {char |} {res} .319628226     1  .319628226           {txt}Prob > F      = {res} 0.1262
+    {txt}Residual {char |} {res} 29.8425339   220  .135647882           {txt}R-squared     = {res} 0.0106
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0061
+    {txt}   Total {char |} {res} 30.1621622   221  .136480372           {txt}Root MSE      = {res}  .3683
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0895928   .0583656     1.54   0.126    -.0254345      .20462
+{txt}       _cons {c |}  {res} .1411765   .0282476     5.00   0.000     .0855059    .1968471
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     492
+{txt}{hline 13}{char +}{hline 30}           F(  1,   490) ={res}    1.13
+    {txt}   Model {char |} {res} .367517343     1  .367517343           {txt}Prob > F      = {res} 0.2891
+    {txt}Residual {char |} {res} 159.877167   490  .326279932           {txt}R-squared     = {res} 0.0023
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0003
+    {txt}   Total {char |} {res} 160.244684   491  .326363919           {txt}Root MSE      = {res} .57121
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0559258   .0526949     1.06   0.289      -.04761    .1594617
+{txt}       _cons {c |}  {res} .5074306   .0778553     6.52   0.000     .3544591     .660402
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     387
+{txt}{hline 13}{char +}{hline 30}           F(  1,   385) ={res}    3.41
+    {txt}   Model {char |} {res} 1.09905811     1  1.09905811           {txt}Prob > F      = {res} 0.0654
+    {txt}Residual {char |} {res}  123.92778   385  .321890337           {txt}R-squared     = {res} 0.0088
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0062
+    {txt}   Total {char |} {res} 125.026838   386  .323903725           {txt}Root MSE      = {res} .56735
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0572835   .0310008     1.85   0.065    -.0036686    .1182357
+{txt}       _cons {c |}  {res} .3592775   .0420492     8.54   0.000     .2766026    .4419523
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     492
+{txt}{hline 13}{char +}{hline 30}           F(  1,   490) ={res}    1.20
+    {txt}   Model {char |} {res}  .27053896     1   .27053896           {txt}Prob > F      = {res} 0.2743
+    {txt}Residual {char |} {res} 110.678648   490  .225874792           {txt}R-squared     = {res} 0.0024
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0004
+    {txt}   Total {char |} {res} 110.949187   491  .225965758           {txt}Root MSE      = {res} .47526
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0479831   .0438437    -1.09   0.274     -.134128    .0381618
+{txt}       _cons {c |}  {res} .5896008   .0647779     9.10   0.000      .462324    .7168775
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     387
+{txt}{hline 13}{char +}{hline 30}           F(  1,   385) ={res}    0.45
+    {txt}   Model {char |} {res} .054932984     1  .054932984           {txt}Prob > F      = {res} 0.5033
+    {txt}Residual {char |} {res} 47.1285295   385  .122411765           {txt}R-squared     = {res} 0.0012
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0014
+    {txt}   Total {char |} {res} 47.1834625   386   .12223695           {txt}Root MSE      = {res} .34987
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0128067   .0191175    -0.67   0.503    -.0503944    .0247811
+{txt}       _cons {c |}  {res} .1547601   .0259308     5.97   0.000     .1037764    .2057437
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     671
+{txt}{hline 13}{char +}{hline 30}           F(  1,   669) ={res}   12.37
+    {txt}   Model {char |} {res} 3.84203017     1  3.84203017           {txt}Prob > F      = {res} 0.0005
+    {txt}Residual {char |} {res} 207.738218   669  .310520506           {txt}R-squared     = {res} 0.0182
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0167
+    {txt}   Total {char |} {res} 211.580248   670  .315791415           {txt}Root MSE      = {res} .55724
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .091801   .0260983     3.52   0.000     .0405566    .1430455
+{txt}       _cons {c |}  {res} .5521156   .0522063    10.58   0.000     .4496076    .6546237
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     421
+{txt}{hline 13}{char +}{hline 30}           F(  1,   419) ={res}    4.41
+    {txt}   Model {char |} {res} 1.47725985     1  1.47725985           {txt}Prob > F      = {res} 0.0362
+    {txt}Residual {char |} {res} 140.236497   419   .33469331           {txt}R-squared     = {res} 0.0104
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0081
+    {txt}   Total {char |} {res} 141.713757   420  .337413706           {txt}Root MSE      = {res} .57853
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0565729    .026928     2.10   0.036     .0036422    .1095036
+{txt}       _cons {c |}  {res} .3596734   .0418732     8.59   0.000     .2773656    .4419812
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     671
+{txt}{hline 13}{char +}{hline 30}           F(  1,   669) ={res}    0.14
+    {txt}   Model {char |} {res}  .03260486     1   .03260486           {txt}Prob > F      = {res} 0.7047
+    {txt}Residual {char |} {res}  151.75279   669  .226835262           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0013
+    {txt}   Total {char |} {res} 151.785395   670  .226545366           {txt}Root MSE      = {res} .47627
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0084568    .022306    -0.38   0.705    -.0522551    .0353414
+{txt}       _cons {c |}  {res} .6388335   .0446204    14.32   0.000     .5512206    .7264464
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     421
+{txt}{hline 13}{char +}{hline 30}           F(  1,   419) ={res}    0.08
+    {txt}   Model {char |} {res} .009813229     1  .009813229           {txt}Prob > F      = {res} 0.7790
+    {txt}Residual {char |} {res}  52.151707   419  .124467081           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0022
+    {txt}   Total {char |} {res} 52.1615202   420  .124194096           {txt}Root MSE      = {res}  .3528
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0046109   .0164213    -0.28   0.779    -.0368893    .0276675
+{txt}       _cons {c |}  {res}  .150194   .0255353     5.88   0.000     .1000008    .2003872
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     802
+{txt}{hline 13}{char +}{hline 30}           F(  1,   800) ={res}   16.75
+    {txt}   Model {char |} {res} 5.06878102     1  5.06878102           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 242.090252   800  .302612815           {txt}R-squared     = {res} 0.0205
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0193
+    {txt}   Total {char |} {res} 247.159033   801  .308563088           {txt}Root MSE      = {res}  .5501
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0720838   .0176128     4.09   0.000     .0375109    .1066566
+{txt}       _cons {c |}  {res} .5223306   .0430033    12.15   0.000      .437918    .6067432
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     530
+{txt}{hline 13}{char +}{hline 30}           F(  1,   528) ={res}    5.62
+    {txt}   Model {char |} {res} 1.85761004     1  1.85761004           {txt}Prob > F      = {res} 0.0182
+    {txt}Residual {char |} {res} 174.647253   528  .330771312           {txt}R-squared     = {res} 0.0105
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0087
+    {txt}   Total {char |} {res} 176.504863   529  .333657586           {txt}Root MSE      = {res} .57513
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0399311   .0168499     2.37   0.018       .00683    .0730321
+{txt}       _cons {c |}  {res} .3724044   .0384655     9.68   0.000     .2968402    .4479686
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     802
+{txt}{hline 13}{char +}{hline 30}           F(  1,   800) ={res}    0.09
+    {txt}   Model {char |} {res} .019758544     1  .019758544           {txt}Prob > F      = {res} 0.7679
+    {txt}Residual {char |} {res} 181.308172   800  .226635215           {txt}R-squared     = {res} 0.0001
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0011
+    {txt}   Total {char |} {res}  181.32793   801  .226376942           {txt}Root MSE      = {res} .47606
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0045005   .0152423    -0.30   0.768    -.0344201     .025419
+{txt}       _cons {c |}  {res}   .64481   .0372153    17.33   0.000     .5717588    .7178611
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     530
+{txt}{hline 13}{char +}{hline 30}           F(  1,   528) ={res}    0.18
+    {txt}   Model {char |} {res}  .02260753     1   .02260753           {txt}Prob > F      = {res} 0.6752
+    {txt}Residual {char |} {res} 67.9019208   528  .128602123           {txt}R-squared     = {res} 0.0003
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0016
+    {txt}   Total {char |} {res} 67.9245283   529  .128401755           {txt}Root MSE      = {res} .35861
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0044051   .0105065     0.42   0.675    -.0162345    .0250448
+{txt}       _cons {c |}  {res} .1432967   .0239845     5.97   0.000     .0961799    .1904136
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     855
+{txt}{hline 13}{char +}{hline 30}           F(  1,   853) ={res}   21.15
+    {txt}   Model {char |} {res} 6.52356977     1  6.52356977           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 263.142361   853  .308490458           {txt}R-squared     = {res} 0.0242
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0230
+    {txt}   Total {char |} {res} 269.665931   854  .315768069           {txt}Root MSE      = {res} .55542
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0689719   .0149986     4.60   0.000     .0395334    .0984103
+{txt}       _cons {c |}  {res} .5168933   .0400816    12.90   0.000     .4382231    .5955635
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     586
+{txt}{hline 13}{char +}{hline 30}           F(  1,   584) ={res}   13.83
+    {txt}   Model {char |} {res} 4.76208687     1  4.76208687           {txt}Prob > F      = {res} 0.0002
+    {txt}Residual {char |} {res} 201.150609   584  .344435975           {txt}R-squared     = {res} 0.0231
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0215
+    {txt}   Total {char |} {res} 205.912696   585  .351987515           {txt}Root MSE      = {res} .58689
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0528542   .0142146     3.72   0.000     .0249362    .0807722
+{txt}       _cons {c |}  {res} .3586745   .0378824     9.47   0.000     .2842722    .4330768
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     855
+{txt}{hline 13}{char +}{hline 30}           F(  1,   853) ={res}    0.57
+    {txt}   Model {char |} {res} .129548116     1  .129548116           {txt}Prob > F      = {res} 0.4520
+    {txt}Residual {char |} {res} 195.199107   853  .228838343           {txt}R-squared     = {res} 0.0007
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0005
+    {txt}   Total {char |} {res} 195.328655   854  .228722078           {txt}Root MSE      = {res} .47837
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0097195    .012918     0.75   0.452    -.0156352    .0350742
+{txt}       _cons {c |}  {res} .6696558   .0345214    19.40   0.000     .6018988    .7374127
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     586
+{txt}{hline 13}{char +}{hline 30}           F(  1,   584) ={res}    0.02
+    {txt}   Model {char |} {res} .002609777     1  .002609777           {txt}Prob > F      = {res} 0.8855
+    {txt}Residual {char |} {res} 73.3762298   584  .125644229           {txt}R-squared     = {res} 0.0000
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0017
+    {txt}   Total {char |} {res} 73.3788396   585  .125433914           {txt}Root MSE      = {res} .35446
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0012373   .0085852    -0.14   0.885     -.018099    .0156244
+{txt}       _cons {c |}  {res} .1492914   .0228799     6.53   0.000     .1043545    .1942284
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     898
+{txt}{hline 13}{char +}{hline 30}           F(  1,   896) ={res}   33.43
+    {txt}   Model {char |} {res} 10.3577823     1  10.3577823           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 277.639709   896  .309865747           {txt}R-squared     = {res} 0.0360
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0349
+    {txt}   Total {char |} {res} 287.997491   897  .321067438           {txt}Root MSE      = {res} .55666
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0735289   .0127178     5.78   0.000     .0485688     .098489
+{txt}       _cons {c |}  {res} .5256127   .0371293    14.16   0.000     .4527421    .5984833
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     689
+{txt}{hline 13}{char +}{hline 30}           F(  1,   687) ={res}   23.31
+    {txt}   Model {char |} {res} 7.74221584     1  7.74221584           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 228.177129   687  .332135559           {txt}R-squared     = {res} 0.0328
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0314
+    {txt}   Total {char |} {res} 235.919345   688  .342906024           {txt}Root MSE      = {res} .57631
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0501938   .0103962     4.83   0.000     .0297817     .070606
+{txt}       _cons {c |}  {res} .3621642   .0351361    10.31   0.000     .2931772    .4311512
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     898
+{txt}{hline 13}{char +}{hline 30}           F(  1,   896) ={res}    0.19
+    {txt}   Model {char |} {res} .044205557     1  .044205557           {txt}Prob > F      = {res} 0.6602
+    {txt}Residual {char |} {res} 204.757576   896  .228524081           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0009
+    {txt}   Total {char |} {res} 204.801782   897  .228318597           {txt}Root MSE      = {res} .47804
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0048036   .0109217     0.44   0.660    -.0166315    .0262387
+{txt}       _cons {c |}  {res} .6602495   .0318857    20.71   0.000     .5976701     .722829
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     689
+{txt}{hline 13}{char +}{hline 30}           F(  1,   687) ={res}    0.05
+    {txt}   Model {char |} {res} .005804745     1  .005804745           {txt}Prob > F      = {res} 0.8311
+    {txt}Residual {char |} {res} 87.5965175   687  .127505848           {txt}R-squared     = {res} 0.0001
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0014
+    {txt}   Total {char |} {res} 87.6023222   688  .127328957           {txt}Root MSE      = {res} .35708
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0013744   .0064414     0.21   0.831    -.0112729    .0140217
+{txt}       _cons {c |}  {res} .1458655   .0217701     6.70   0.000     .1031216    .1886095
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1049
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1047) ={res}   65.21
+    {txt}   Model {char |} {res} 19.4116723     1  19.4116723           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 311.687555  1047   .29769585           {txt}R-squared     = {res} 0.0586
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0577
+    {txt}   Total {char |} {res} 331.099227  1048  .315934377           {txt}Root MSE      = {res} .54562
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0656707   .0081325     8.08   0.000     .0497127    .0816286
+{txt}       _cons {c |}  {res} .5094971   .0308071    16.54   0.000     .4490465    .5699477
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     739
+{txt}{hline 13}{char +}{hline 30}           F(  1,   737) ={res}   40.91
+    {txt}   Model {char |} {res}  13.719546     1   13.719546           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 247.173005   737  .335377211           {txt}R-squared     = {res} 0.0526
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0513
+    {txt}   Total {char |} {res} 260.892551   738  .353512941           {txt}Root MSE      = {res} .57912
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0588621   .0092031     6.40   0.000     .0407948    .0769295
+{txt}       _cons {c |}  {res} .3481565   .0343914    10.12   0.000     .2806396    .4156734
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1049
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1047) ={res}    1.67
+    {txt}   Model {char |} {res} .375045195     1  .375045195           {txt}Prob > F      = {res} 0.1962
+    {txt}Residual {char |} {res}  234.80894  1047  .224268328           {txt}R-squared     = {res} 0.0016
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0006
+    {txt}   Total {char |} {res} 235.183985  1048  .224412199           {txt}Root MSE      = {res} .47357
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0091281   .0070587    -1.29   0.196    -.0229789    .0047227
+{txt}       _cons {c |}  {res} .6316785   .0267392    23.62   0.000       .57921    .6841469
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     739
+{txt}{hline 13}{char +}{hline 30}           F(  1,   737) ={res}    0.20
+    {txt}   Model {char |} {res} .024777952     1  .024777952           {txt}Prob > F      = {res} 0.6552
+    {txt}Residual {char |} {res} 91.4826645   737  .124128446           {txt}R-squared     = {res} 0.0003
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0011
+    {txt}   Total {char |} {res} 91.5074425   738  .123993825           {txt}Root MSE      = {res} .35232
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0025015   .0055989    -0.45   0.655    -.0134932    .0084902
+{txt}       _cons {c |}  {res} .1521289   .0209228     7.27   0.000     .1110535    .1932042
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1159
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1157) ={res}   79.72
+    {txt}   Model {char |} {res} 22.9665275     1  22.9665275           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 333.314632  1157  .288085248           {txt}R-squared     = {res} 0.0645
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0637
+    {txt}   Total {char |} {res} 356.281159  1158  .307669395           {txt}Root MSE      = {res} .53674
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .058021   .0064983     8.93   0.000     .0452713    .0707707
+{txt}       _cons {c |}  {res} .4920335   .0283716    17.34   0.000      .436368    .5476991
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     922
+{txt}{hline 13}{char +}{hline 30}           F(  1,   920) ={res}   87.38
+    {txt}   Model {char |} {res} 29.4434033     1  29.4434033           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 309.994069   920  .336950075           {txt}R-squared     = {res} 0.0867
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0857
+    {txt}   Total {char |} {res} 339.437472   921  .368553173           {txt}Root MSE      = {res} .58047
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0617385   .0066046     9.35   0.000     .0487767    .0747003
+{txt}       _cons {c |}  {res} .3427602   .0322854    10.62   0.000     .2793986    .4061218
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1159
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1157) ={res}    1.44
+    {txt}   Model {char |} {res} .322453523     1  .322453523           {txt}Prob > F      = {res} 0.2304
+    {txt}Residual {char |} {res} 259.094285  1157  .223936288           {txt}R-squared     = {res} 0.0012
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0004
+    {txt}   Total {char |} {res} 259.416739  1158  .224021363           {txt}Root MSE      = {res} .47322
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} -.006875   .0057293    -1.20   0.230    -.0181159     .004366
+{txt}       _cons {c |}  {res} .6368222   .0250141    25.46   0.000     .5877441    .6859004
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     922
+{txt}{hline 13}{char +}{hline 30}           F(  1,   920) ={res}    5.02
+    {txt}   Model {char |} {res} .696573089     1  .696573089           {txt}Prob > F      = {res} 0.0252
+    {txt}Residual {char |} {res} 127.581084   920  .138675091           {txt}R-squared     = {res} 0.0054
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0043
+    {txt}   Total {char |} {res} 128.277657   921  .139280844           {txt}Root MSE      = {res} .37239
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0094961    .004237     2.24   0.025     .0011807    .0178115
+{txt}       _cons {c |}  {res} .1296206    .020712     6.26   0.000     .0889722    .1702689
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1304
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1302) ={res}  112.06
+    {txt}   Model {char |} {res} 32.0937719     1  32.0937719           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res}  372.89084  1302  .286398494           {txt}R-squared     = {res} 0.0792
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0785
+    {txt}   Total {char |} {res} 404.984612  1303  .310809372           {txt}Root MSE      = {res} .53516
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0551842    .005213    10.59   0.000     .0449573     .065411
+{txt}       _cons {c |}  {res} .4848458   .0265554    18.26   0.000     .4327497    .5369419
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1133
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1131) ={res}  102.81
+    {txt}   Model {char |} {res} 34.5838942     1  34.5838942           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 380.447547  1131  .336381562           {txt}R-squared     = {res} 0.0833
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0825
+    {txt}   Total {char |} {res} 415.031441  1132  .366635549           {txt}Root MSE      = {res} .57998
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .053413   .0052678    10.14   0.000     .0430773    .0637487
+{txt}       _cons {c |}  {res} .3617736   .0309548    11.69   0.000     .3010384    .4225088
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1304
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1302) ={res}    0.45
+    {txt}   Model {char |} {res} .101992003     1  .101992003           {txt}Prob > F      = {res} 0.5007
+    {txt}Residual {char |} {res} 292.720094  1302  .224823421           {txt}R-squared     = {res} 0.0003
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0004
+    {txt}   Total {char |} {res} 292.822086  1303  .224729153           {txt}Root MSE      = {res} .47416
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0031109   .0046188    -0.67   0.501    -.0121719    .0059501
+{txt}       _cons {c |}  {res} .6463594   .0235282    27.47   0.000     .6002021    .6925167
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1133
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1131) ={res}    4.21
+    {txt}   Model {char |} {res} .591926322     1  .591926322           {txt}Prob > F      = {res} 0.0403
+    {txt}Residual {char |} {res} 158.871445  1131   .14046989           {txt}R-squared     = {res} 0.0037
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0028
+    {txt}   Total {char |} {res} 159.463372  1132  .140868703           {txt}Root MSE      = {res} .37479
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0069879   .0034041     2.05   0.040     .0003088    .0136669
+{txt}       _cons {c |}  {res} .1353488   .0200034     6.77   0.000     .0961009    .1745966
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por izquierda. Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1426
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1424) ={res}  132.70
+    {txt}   Model {char |} {res} 38.2117573     1  38.2117573           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res}  410.03505  1424  .287945962           {txt}R-squared     = {res} 0.0852
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0846
+    {txt}   Total {char |} {res} 448.246807  1425  .314559163           {txt}Root MSE      = {res} .53661
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0517709   .0044941    11.52   0.000     .0429551    .0605867
+{txt}       _cons {c |}  {res} .4751963   .0255353    18.61   0.000     .4251054    .5252871
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1189
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1187) ={res}  111.07
+    {txt}   Model {char |} {res}  37.397105     1   37.397105           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 399.658529  1187  .336696317           {txt}R-squared     = {res} 0.0856
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0848
+    {txt}   Total {char |} {res} 437.055634  1188  .367891947           {txt}Root MSE      = {res} .58026
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0525932   .0049903    10.54   0.000     .0428023     .062384
+{txt}       _cons {c |}  {res}  .364062   .0306058    11.90   0.000     .3040144    .4241096
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por izquierda. Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1426
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1424) ={res}    1.42
+    {txt}   Model {char |} {res} .317784719     1  .317784719           {txt}Prob > F      = {res} 0.2329
+    {txt}Residual {char |} {res} 317.783898  1424   .22316285           {txt}R-squared     = {res} 0.0010
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0003
+    {txt}   Total {char |} {res} 318.101683  1425  .223229251           {txt}Root MSE      = {res}  .4724
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0047212   .0039564    -1.19   0.233    -.0124822    .0030397
+{txt}       _cons {c |}  {res}  .641807     .02248    28.55   0.000     .5977095    .6859045
+{txt}{hline 13}{c BT}{hline 64}
+Regresión talla para probabilidad de participación por derecha. Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1189
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1187) ={res}    3.99
+    {txt}   Model {char |} {res} .562359119     1  .562359119           {txt}Prob > F      = {res} 0.0459
+    {txt}Residual {char |} {res} 167.119727  1187  .140791682           {txt}R-squared     = {res} 0.0034
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0025
+    {txt}   Total {char |} {res} 167.682086  1188  .141146537           {txt}Root MSE      = {res} .37522
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0064494    .003227     2.00   0.046     .0001181    .0127806
+{txt}       _cons {c |}  {res} .1368519   .0197913     6.91   0.000     .0980221    .1756816
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. mat coln IL=IL
+{txt}
+{com}. mat list IL
+
+{txt}IL[10,1]
+            IL
+ r1  {res}.17595339
+{txt} r2  {res}.34070657
+{txt} r3  {res} .3938328
+{txt} r4  {res}.29894756
+{txt} r5  {res}.30405385
+{txt} r6  {res}.31775577
+{txt} r7  {res}.33644205
+{txt} r8  {res}.29430759
+{txt} r9  {res}.24084074
+{txt}r10  {res}.22008738
+{txt}
+{com}. 
+. **** Podemos ver entonces que los resultados quedan almacenados en el vector IL. Cada fila es un
+. **** ancho de banda diferente. Si se desea ver los resultados de las constantes estimadas 
+. **** utilizando el comando "scalar list" se pueden ver todas las estimaciones de las constante. 
+. 
+. **** II. Kernel triangular
+. 
+. **** A diferencia de la metodología de Imbens y Lemieux, el kernel triangular nos permite
+. **** estimar la discontinuidad en una variable haciendo uso de una sola regresión. 
+. **** Los resultados quedan almacenados en el vector KT, los resultados de la discontinuidad
+. **** en la talla para la edad son guardados en el vector T y los resultados de la discontinuidad
+. **** en la probabilidad de participación quedan almacenados en el vector T. 
+. 
+. mat KT=J(10,1,0)
+{txt}
+{com}. mat Y=J(1,10,0)
+{txt}
+{com}. mat T=J(1,10,0)
+{txt}
+{com}. 
+. **** Debemos generar una variable que nos indique si el individuo está encima o debajo del umbral:
+. 
+. gen W=0 if sisben>=10
+{txt}(1426 missing values generated)
+
+{com}. replace W=1 if sisben<10
+{txt}(1426 real changes made)
+
+{com}. 
+. **** Así mismo, generamos la interacción entre esta variable recién creada y el puntaje de sisben alineado. 
+. 
+. gen W_sisbenalin=W*sisbenalin
+{txt}
+{com}. 
+. **** La variable k será la que contenga los pesos de cada observación.
+. 
+. gen k=.
+{txt}(4000 missing values generated)
+
+{com}. gen norm1=.
+{txt}(4000 missing values generated)
+
+{com}. 
+. 
+. local h=1
+{txt}
+{com}. while `h'<=10 {c -(}
+{txt}  2{com}. replace norm1=1-abs(sisbenalin/`h')
+{txt}  3{com}. replace k=0 if norm1<0
+{txt}  4{com}. replace k=norm1 if norm1>=0
+{txt}  5{com}. display "Ancho de banda `h'"
+{txt}  6{com}. reg ha_nchs W sisbenalin W_sisbenalin [aw=k], robust
+{txt}  7{com}. mat define A_`h'=e(b)
+{txt}  8{com}. mat Y[1,`h']=el(A_`h',1,1)
+{txt}  9{com}. mat drop A_`h'
+{txt} 10{com}. display "Ancho de banda `h'"
+{txt} 11{com}. reg D W sisbenalin W_sisbenalin [aw=k], robust 
+{txt} 12{com}. mat define A_T_`h'=e(b)
+{txt} 13{com}. mat T[1,`h']=el(A_T_`h',1,1)
+{txt} 14{com}. mat drop A_T_`h'
+{txt} 15{com}. mat KT[`h',1]=el(Y,1,`h')/el(T,1,`h')
+{txt} 16{com}. local h=`h'+1
+{txt} 17{com}. {c )-}
+{txt}(4000 real changes made)
+(3480 real changes made)
+(520 real changes made)
+Ancho de banda 1
+(sum of wgt is   1.7000e+02)
+
+Linear regression                                      Number of obs ={res}     170
+                                                       {txt}F(  0,   169) ={res}    0.00
+                                                       {txt}Prob > F      = {res}      .
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .56653
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res}(dropped)
+{txt}  sisbenalin {c |}  {res}(dropped)
+{txt}W_sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .3641602   .0434505     8.38   0.000     .2783844    .4499359
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 1
+(sum of wgt is   1.7000e+02)
+
+Linear regression                                      Number of obs ={res}     170
+                                                       {txt}F(  0,   169) ={res}    0.00
+                                                       {txt}Prob > F      = {res}      .
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .34923
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res}(dropped)
+{txt}  sisbenalin {c |}  {res}(dropped)
+{txt}W_sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .1411765   .0267849     5.27   0.000     .0883004    .1940525
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(350 real changes made)
+Ancho de banda 2
+(sum of wgt is   3.4500e+02)
+
+Linear regression                                      Number of obs ={res}     520
+                                                       {txt}F(  2,   517) ={res}    1.31
+                                                       {txt}Prob > F      = {res} 0.2704
+                                                       {txt}R-squared     = {res} 0.0053
+                                                       {txt}Root MSE      = {res} .58224
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1078202   .1267477     0.85   0.395    -.1411836     .356824
+{txt}  sisbenalin {c |}  {res} .0204756    .096019     0.21   0.831    -.1681598    .2091111
+{txt}W_sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .3641602   .0434481     8.38   0.000     .2788037    .4495166
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 2
+(sum of wgt is   3.4500e+02)
+
+Linear regression                                      Number of obs ={res}     520
+                                                       {txt}F(  2,   517) ={res}   85.18
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2516
+                                                       {txt}Root MSE      = {res} .41704
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .5860002   .0841597     6.96   0.000     .4206632    .7513372
+{txt}  sisbenalin {c |}  {res} .0895928   .0644275     1.39   0.165    -.0369791    .2161647
+{txt}W_sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .1411765   .0267834     5.27   0.000     .0885589    .1937941
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(709 real changes made)
+Ancho de banda 3
+(sum of wgt is   5.2300e+02)
+
+Linear regression                                      Number of obs ={res}     879
+                                                       {txt}F(  3,   875) ={res}    1.41
+                                                       {txt}Prob > F      = {res} 0.2388
+                                                       {txt}R-squared     = {res} 0.0055
+                                                       {txt}Root MSE      = {res} .57502
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res}  .146382   .0893841     1.64   0.102    -.0290504    .3218143
+{txt}  sisbenalin {c |}  {res} .0541045   .0315946     1.71   0.087    -.0079055    .1161146
+{txt}W_sisbenalin {c |}  {res} .0018213   .0605016     0.03   0.976    -.1169239    .1205666
+{txt}       _cons {c |}  {res} .3610486   .0422527     8.54   0.000       .27812    .4439771
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 3
+(sum of wgt is   5.2300e+02)
+
+Linear regression                                      Number of obs ={res}     879
+                                                       {txt}F(  3,   875) ={res}  110.13
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2631
+                                                       {txt}Root MSE      = {res} .42155
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .4397679    .070116     6.27   0.000     .3021527    .5773831
+{txt}  sisbenalin {c |}  {res}-.0039626   .0192313    -0.21   0.837    -.0417074    .0337822
+{txt}W_sisbenalin {c |}  {res}-.0440205   .0475923    -0.92   0.355    -.1374289     .049388
+{txt}       _cons {c |}  {res} .1498328   .0261575     5.73   0.000      .098494    .2011717
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(922 real changes made)
+Ancho de banda 4
+(sum of wgt is   6.6525e+02)
+
+Linear regression                                      Number of obs ={res}    1092
+                                                       {txt}F(  3,  1088) ={res}    4.79
+                                                       {txt}Prob > F      = {res} 0.0025
+                                                       {txt}R-squared     = {res} 0.0098
+                                                       {txt}Root MSE      = {res} .57104
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1805597   .0702568     2.57   0.010     .0427056    .3184138
+{txt}  sisbenalin {c |}  {res} .0553791   .0278941     1.99   0.047     .0006468    .1101113
+{txt}W_sisbenalin {c |}  {res} .0291605   .0394201     0.74   0.460    -.0481876    .1065085
+{txt}       _cons {c |}  {res} .3605867   .0416731     8.65   0.000      .278818    .4423553
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 4
+(sum of wgt is   6.6525e+02)
+
+Linear regression                                      Number of obs ={res}    1092
+                                                       {txt}F(  3,  1088) ={res}  135.98
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2588
+                                                       {txt}Root MSE      = {res} .42622
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .4767937   .0532656     8.95   0.000     .3722787    .5813087
+{txt}  sisbenalin {c |}  {res}-.0042974   .0167556    -0.26   0.798    -.0371743    .0285796
+{txt}W_sisbenalin {c |}  {res}  -.01216   .0290268    -0.42   0.675    -.0691149     .044795
+{txt}       _cons {c |}  {res} .1499542   .0258464     5.80   0.000     .0992396    .2006687
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1162 real changes made)
+Ancho de banda 5
+(sum of wgt is   7.9860e+02)
+
+Linear regression                                      Number of obs ={res}    1332
+                                                       {txt}F(  3,  1328) ={res}    8.96
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0133
+                                                       {txt}Root MSE      = {res} .56737
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1649211   .0620076     2.66   0.008     .0432776    .2865645
+{txt}  sisbenalin {c |}  {res}  .046368   .0192058     2.41   0.016      .008691    .0840449
+{txt}W_sisbenalin {c |}  {res} .0303838   .0275061     1.10   0.270    -.0235763     .084344
+{txt}       _cons {c |}  {res} .3655657   .0393251     9.30   0.000     .2884195    .4427118
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 5
+(sum of wgt is   7.9860e+02)
+
+Linear regression                                      Number of obs ={res}    1332
+                                                       {txt}F(  3,  1328) ={res}  160.07
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2548
+                                                       {txt}Root MSE      = {res}  .4285
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .4898312   .0464204    10.55   0.000      .398766    .5808965
+{txt}  sisbenalin {c |}  {res}  .000779   .0117699     0.07   0.947    -.0223106    .0238685
+{txt}W_sisbenalin {c |}  {res}-.0097605   .0205039    -0.48   0.634    -.0499841    .0304631
+{txt}       _cons {c |}  {res} .1471493   .0244978     6.01   0.000     .0990907    .1952078
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1271 real changes made)
+Ancho de banda 6
+(sum of wgt is   9.0567e+02)
+
+Linear regression                                      Number of obs ={res}    1441
+                                                       {txt}F(  3,  1437) ={res}   13.43
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0185
+                                                       {txt}Root MSE      = {res} .56762
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1616883   .0584236     2.77   0.006     .0470836    .2762931
+{txt}  sisbenalin {c |}  {res}  .049294    .015819     3.12   0.002     .0182631    .0803249
+{txt}W_sisbenalin {c |}  {res} .0239319   .0230493     1.04   0.299     -.021282    .0691458
+{txt}       _cons {c |}  {res} .3633446   .0380027     9.56   0.000     .2887978    .4378914
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 6
+(sum of wgt is   9.0567e+02)
+
+Linear regression                                      Number of obs ={res}    1441
+                                                       {txt}F(  3,  1437) ={res}  171.00
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2519
+                                                       {txt}Root MSE      = {res} .42955
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .5022503   .0434936    11.55   0.000     .4169327     .587568
+{txt}  sisbenalin {c |}  {res}-.0001306   .0096895    -0.01   0.989    -.0191377    .0188765
+{txt}W_sisbenalin {c |}  {res}-.0003755   .0172393    -0.02   0.983    -.0341923    .0334414
+{txt}       _cons {c |}  {res} .1478397   .0236767     6.24   0.000     .1013952    .1942843
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1417 real changes made)
+Ancho de banda 7
+(sum of wgt is   1.0030e+03)
+
+Linear regression                                      Number of obs ={res}    1587
+                                                       {txt}F(  3,  1583) ={res}   21.21
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0261
+                                                       {txt}Root MSE      = {res} .56703
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1622779   .0550971     2.95   0.003     .0542069    .2703488
+{txt}  sisbenalin {c |}  {res} .0497072   .0122409     4.06   0.000      .025697    .0737173
+{txt}W_sisbenalin {c |}  {res} .0236344   .0190888     1.24   0.216    -.0138076    .0610764
+{txt}       _cons {c |}  {res} .3629507   .0362311    10.02   0.000     .2918847    .4340167
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 7
+(sum of wgt is   1.0030e+03)
+
+Linear regression                                      Number of obs ={res}    1587
+                                                       {txt}F(  3,  1583) ={res}  184.45
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2513
+                                                       {txt}Root MSE      = {res} .42956
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .5063368   .0408835    12.38   0.000     .4261452    .5865283
+{txt}  sisbenalin {c |}  {res} .0005604   .0075335     0.07   0.941    -.0142163    .0153372
+{txt}W_sisbenalin {c |}  {res} .0009606   .0144856     0.07   0.947    -.0274524    .0293736
+{txt}       _cons {c |}  {res} .1471809    .022584     6.52   0.000     .1028832    .1914785
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1618 real changes made)
+Ancho de banda 8
+(sum of wgt is   1.1011e+03)
+
+Linear regression                                      Number of obs ={res}    1788
+                                                       {txt}F(  3,  1784) ={res}   38.51
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0390
+                                                       {txt}Root MSE      = {res} .56553
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1592941   .0501797     3.17   0.002     .0608769    .2577113
+{txt}  sisbenalin {c |}  {res}  .053037   .0104878     5.06   0.000     .0324673    .0736066
+{txt}W_sisbenalin {c |}  {res} .0165242   .0147961     1.12   0.264    -.0124952    .0455437
+{txt}       _cons {c |}  {res} .3590849   .0351692    10.21   0.000     .2901077     .428062
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 8
+(sum of wgt is   1.1011e+03)
+
+Linear regression                                      Number of obs ={res}    1788
+                                                       {txt}F(  3,  1784) ={res}  209.96
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2534
+                                                       {txt}Root MSE      = {res} .42917
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .4955349   .0366898    13.51   0.000     .4235754    .5674943
+{txt}  sisbenalin {c |}  {res}-.0005532   .0064693    -0.09   0.932    -.0132414    .0121349
+{txt}W_sisbenalin {c |}  {res}-.0031738    .010901    -0.29   0.771    -.0245538    .0182062
+{txt}       _cons {c |}  {res} .1484738   .0219154     6.77   0.000     .1054912    .1914565
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1911 real changes made)
+Ancho de banda 9
+(sum of wgt is   1.2100e+03)
+
+Linear regression                                      Number of obs ={res}    2081
+                                                       {txt}F(  3,  2077) ={res}   71.59
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0582
+                                                       {txt}Root MSE      = {res} .56384
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1548178   .0466551     3.32   0.001      .063322    .2463135
+{txt}  sisbenalin {c |}  {res} .0568845   .0079619     7.14   0.000     .0412703    .0724986
+{txt}W_sisbenalin {c |}  {res} .0076999   .0113634     0.68   0.498     -.014585    .0299848
+{txt}       _cons {c |}  {res} .3538456   .0333742    10.60   0.000     .2883953     .419296
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 9
+(sum of wgt is   1.2100e+03)
+
+Linear regression                                      Number of obs ={res}    2081
+                                                       {txt}F(  3,  2077) ={res}  234.02
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2519
+                                                       {txt}Root MSE      = {res} .42963
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .4989354   .0340513    14.65   0.000     .4321572    .5657137
+{txt}  sisbenalin {c |}  {res} .0038902   .0049848     0.78   0.435    -.0058855     .013666
+{txt}W_sisbenalin {c |}  {res}-.0089748   .0084786    -1.06   0.290    -.0256022    .0076525
+{txt}       _cons {c |}  {res} .1424231   .0208056     6.85   0.000      .101621    .1832251
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(2267 real changes made)
+Ancho de banda 10
+(sum of wgt is   1.3327e+03)
+
+Linear regression                                      Number of obs ={res}    2437
+                                                       {txt}F(  3,  2433) ={res}  120.64
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0795
+                                                       {txt}Root MSE      = {res} .56249
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .1443667   .0440047     3.28   0.001     .0580761    .2306574
+{txt}  sisbenalin {c |}  {res} .0554045   .0062431     8.87   0.000     .0431622    .0676469
+{txt}W_sisbenalin {c |}  {res} .0053457   .0089779     0.60   0.552    -.0122594    .0229509
+{txt}       _cons {c |}  {res} .3562146   .0319554    11.15   0.000     .2935519    .4188773
+{txt}{hline 13}{c BT}{hline 64}
+Ancho de banda 10
+(sum of wgt is   1.3327e+03)
+
+Linear regression                                      Number of obs ={res}    2437
+                                                       {txt}F(  3,  2433) ={res}  262.14
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.2505
+                                                       {txt}Root MSE      = {res} .42981
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+           W {c |}  {res} .5027463   .0320806    15.67   0.000     .4398383    .5656543
+{txt}  sisbenalin {c |}  {res} .0052108    .003966     1.31   0.189    -.0025663    .0129879
+{txt}W_sisbenalin {c |}  {res}-.0094904    .006783    -1.40   0.162    -.0227915    .0038107
+{txt}       _cons {c |}  {res} .1403092   .0199125     7.05   0.000     .1012619    .1793564
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. mat coln KT=KT
+{txt}
+{com}. mat list KT
+
+{txt}KT[10,1]
+            KT
+ r1  {res}        .
+{txt} r2  {res}.18399349
+{txt} r3  {res}.33286186
+{txt} r4  {res}.37869564
+{txt} r5  {res}.33668957
+{txt} r6  {res}.32192781
+{txt} r7  {res}.32049394
+{txt} r8  {res}.32145892
+{txt} r9  {res}.31029619
+{txt}r10  {res}.28715624
+{txt}
+{com}. 
+. 
+. 
+. **** III. Kernel triangular con la metodología Imbens Lemieux
+. 
+. **** El Kernel triangular con metodología Imebns y Lemieux es una combinación de la metodología
+. **** propuesta por Imbens y Lemieux pero con una ponderación dada por un kernel triangular. 
+. **** Los resultados de las estimaciones para el efecto del programa serán almacenados en el vector IL_KT,
+. **** los resultados de la discontinuidad en la talla para la edad quedan en la matriz Y y del tratamiento
+. **** en la matriz T. La metodología es idéntica a la propuesta en el primer capítulo, lo único que cambia
+. **** es que cada observación será ponderada de acuerdo a su distancia frente al umbral. Los pesos
+. **** de cada observación serán almacenados en la variable k. Note que en el caso donde h=1 o h=2 
+. **** la estimación es la misma que bajo la metodología de IL dado que los pesos para observaciones
+. **** diferentes a aquellas con puntaje sisben 9, 10 u 11 es cero. 
+. 
+. 
+. mat IL_KT=J(10,1,0)
+{txt}
+{com}. mat Y=J(1,10,0)
+{txt}
+{com}. mat T=J(1,10,0)
+{txt}
+{com}. 
+. 
+. 
+. 
+. local h=2
+{txt}
+{com}.         while `h'<=10 {c -(}
+{txt}  2{com}.         replace norm1=1-abs(sisbenalin/`h')
+{txt}  3{com}.         replace k=0 if norm1<0
+{txt}  4{com}.         replace k=norm1 if norm1>=0
+{txt}  5{com}.         
+.         display " Regresión talla para la edad por izquierda. Ancho de banda `h'"
+{txt}  6{com}.         reg ha_nchs sisbenalin if  sisben<10 & sisben>=10-`h' [aw=k], robust
+{txt}  7{com}.         mat define A_10=e(b)
+{txt}  8{com}.         scalar define alfa_`h'l=el(A_10,1,2)
+{txt}  9{com}.         mat drop A_10
+{txt} 10{com}.         
+.         display " Regresión talla para la edad por derecha. Ancho de banda `h'"
+{txt} 11{com}.         reg ha_nchs sisbenalin if  sisben>=10 & sisben<=10+`h' [aw=k], robust
+{txt} 12{com}.         mat define A_10=e(b)
+{txt} 13{com}.         scalar define alfa_`h'r=el(A_10,1,2)
+{txt} 14{com}.         mat drop A_10
+{txt} 15{com}. 
+.         display " Regresión probabilidad participación por izquierda. Ancho de banda `h'"
+{txt} 16{com}.         reg D sisbenalin if  sisben<10 & sisben>=10-`h' [aw=k], robust
+{txt} 17{com}.         mat define A_10=e(b)
+{txt} 18{com}.         scalar define alfa_d`h'l=el(A_10,1,2)
+{txt} 19{com}.         mat drop A_10
+{txt} 20{com}. 
+.         display " Regresión probabilidad participación por derecha. Ancho de banda `h'"
+{txt} 21{com}.         reg D sisbenalin if  sisben>=10 & sisben<=10+`h' [aw=k], robust
+{txt} 22{com}.         mat define A_10=e(b)
+{txt} 23{com}.         scalar define alfa_d`h'r=el(A_10,1,2)
+{txt} 24{com}.         mat drop A_10
+{txt} 25{com}. 
+.         mat IL_KT[`h',1]=(alfa_`h'l-alfa_`h'r)/(alfa_d`h'l-alfa_d`h'r)
+{txt} 26{com}. 
+. local h=`h'+1
+{txt} 27{com}. {c )-}
+{txt}(3830 real changes made)
+(1558 real changes made)
+(709 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 2
+(sum of wgt is   1.4900e+02)
+
+Linear regression                                      Number of obs ={res}     298
+                                                       {txt}F(  0,   297) ={res}    0.00
+                                                       {txt}Prob > F      = {res}      .
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res}  .5928
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .4515047   .0343402    13.15   0.000     .3839237    .5190858
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 2
+(sum of wgt is   1.9600e+02)
+
+Linear regression                                      Number of obs ={res}     222
+                                                       {txt}F(  1,   220) ={res}    0.05
+                                                       {txt}Prob > F      = {res} 0.8316
+                                                       {txt}R-squared     = {res} 0.0001
+                                                       {txt}Root MSE      = {res} .57445
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0204756   .0961759     0.21   0.832    -.1690683    .2100196
+{txt}       _cons {c |}  {res} .3641602    .043519     8.37   0.000     .2783926    .4499277
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 2
+(sum of wgt is   1.4900e+02)
+
+Linear regression                                      Number of obs ={res}     298
+                                                       {txt}F(  0,   297) ={res}    0.00
+                                                       {txt}Prob > F      = {res}      .
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .48151
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .6375839   .0278929    22.86   0.000     .5826911    .6924767
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 2
+(sum of wgt is   1.9600e+02)
+
+Linear regression                                      Number of obs ={res}     222
+                                                       {txt}F(  1,   220) ={res}    1.93
+                                                       {txt}Prob > F      = {res} 0.1664
+                                                       {txt}R-squared     = {res} 0.0071
+                                                       {txt}Root MSE      = {res} .36039
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0895928   .0645327     1.39   0.166    -.0375887    .2167742
+{txt}       _cons {c |}  {res} .1411765   .0268271     5.26   0.000     .0883055    .1940475
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(709 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 3
+(sum of wgt is   2.6333e+02)
+
+Linear regression                                      Number of obs ={res}     492
+                                                       {txt}F(  1,   490) ={res}    1.18
+                                                       {txt}Prob > F      = {res} 0.2788
+                                                       {txt}R-squared     = {res} 0.0017
+                                                       {txt}Root MSE      = {res} .57953
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0559258   .0515842     1.08   0.279    -.0454277    .1572794
+{txt}       _cons {c |}  {res} .5074306   .0787477     6.44   0.000     .3527056    .6621555
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 3
+(sum of wgt is   2.5967e+02)
+
+Linear regression                                      Number of obs ={res}     387
+                                                       {txt}F(  1,   385) ={res}    2.93
+                                                       {txt}Prob > F      = {res} 0.0877
+                                                       {txt}R-squared     = {res} 0.0060
+                                                       {txt}Root MSE      = {res} .57044
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0541045   .0316044     1.71   0.088    -.0080343    .1162433
+{txt}       _cons {c |}  {res} .3610486   .0422658     8.54   0.000     .2779478    .4441494
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 3
+(sum of wgt is   2.6333e+02)
+
+Linear regression                                      Number of obs ={res}     492
+                                                       {txt}F(  1,   490) ={res}    1.22
+                                                       {txt}Prob > F      = {res} 0.2708
+                                                       {txt}R-squared     = {res} 0.0019
+                                                       {txt}Root MSE      = {res} .47769
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0479831   .0435231    -1.10   0.271    -.1334981    .0375319
+{txt}       _cons {c |}  {res} .5896008   .0650383     9.07   0.000     .4618125     .717389
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 3
+(sum of wgt is   2.5967e+02)
+
+Linear regression                                      Number of obs ={res}     387
+                                                       {txt}F(  1,   385) ={res}    0.04
+                                                       {txt}Prob > F      = {res} 0.8369
+                                                       {txt}R-squared     = {res} 0.0001
+                                                       {txt}Root MSE      = {res} .35563
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0039626   .0192372    -0.21   0.837    -.0417858    .0338606
+{txt}       _cons {c |}  {res} .1498328   .0261657     5.73   0.000     .0983874    .2012783
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(922 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 4
+(sum of wgt is   3.6525e+02)
+
+Linear regression                                      Number of obs ={res}     671
+                                                       {txt}F(  1,   669) ={res}    9.22
+                                                       {txt}Prob > F      = {res} 0.0025
+                                                       {txt}R-squared     = {res} 0.0108
+                                                       {txt}Root MSE      = {res} .56932
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0845396   .0278448     3.04   0.002     .0298658    .1392134
+{txt}       _cons {c |}  {res} .5411464   .0565436     9.57   0.000     .4301221    .6521706
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 4
+(sum of wgt is   3.0000e+02)
+
+Linear regression                                      Number of obs ={res}     421
+                                                       {txt}F(  1,   419) ={res}    3.94
+                                                       {txt}Prob > F      = {res} 0.0479
+                                                       {txt}R-squared     = {res} 0.0084
+                                                       {txt}Root MSE      = {res} .57321
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0553791   .0279093     1.98   0.048     .0005194    .1102388
+{txt}       _cons {c |}  {res} .3605867   .0416958     8.65   0.000     .2786276    .4425457
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 4
+(sum of wgt is   3.6525e+02)
+
+Linear regression                                      Number of obs ={res}     671
+                                                       {txt}F(  1,   669) ={res}    0.48
+                                                       {txt}Prob > F      = {res} 0.4876
+                                                       {txt}R-squared     = {res} 0.0006
+                                                       {txt}Root MSE      = {res} .47703
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0164573   .0236944    -0.69   0.488    -.0629816    .0300669
+{txt}       _cons {c |}  {res} .6267479   .0465586    13.46   0.000     .5353293    .7181665
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 4
+(sum of wgt is   3.0000e+02)
+
+Linear regression                                      Number of obs ={res}     421
+                                                       {txt}F(  1,   419) ={res}    0.07
+                                                       {txt}Prob > F      = {res} 0.7978
+                                                       {txt}R-squared     = {res} 0.0001
+                                                       {txt}Root MSE      = {res} .35459
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0042974   .0167648    -0.26   0.798    -.0372509    .0286561
+{txt}       _cons {c |}  {res} .1499542   .0258606     5.80   0.000     .0991216    .2007867
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1162 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 5
+(sum of wgt is   4.5260e+02)
+
+Linear regression                                      Number of obs ={res}     802
+                                                       {txt}F(  1,   800) ={res}   15.20
+                                                       {txt}Prob > F      = {res} 0.0001
+                                                       {txt}R-squared     = {res} 0.0157
+                                                       {txt}Root MSE      = {res} .56252
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0767518   .0196857     3.90   0.000     .0381101    .1153936
+{txt}       _cons {c |}  {res} .5304867   .0479302    11.07   0.000      .436403    .6245705
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 5
+(sum of wgt is   3.4600e+02)
+
+Linear regression                                      Number of obs ={res}     530
+                                                       {txt}F(  1,   528) ={res}    5.82
+                                                       {txt}Prob > F      = {res} 0.0161
+                                                       {txt}R-squared     = {res} 0.0097
+                                                       {txt}Root MSE      = {res} .57368
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .046368   .0192132     2.41   0.016     .0086243    .0841117
+{txt}       _cons {c |}  {res} .3655657   .0393403     9.29   0.000     .2882829    .4428484
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 5
+(sum of wgt is   4.5260e+02)
+
+Linear regression                                      Number of obs ={res}     802
+                                                       {txt}F(  1,   800) ={res}    0.29
+                                                       {txt}Prob > F      = {res} 0.5927
+                                                       {txt}R-squared     = {res} 0.0003
+                                                       {txt}Root MSE      = {res} .47664
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0089816    .016785    -0.54   0.593    -.0419294    .0239663
+{txt}       _cons {c |}  {res} .6369805   .0394197    16.16   0.000     .5596022    .7143588
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 5
+(sum of wgt is   3.4600e+02)
+
+Linear regression                                      Number of obs ={res}     530
+                                                       {txt}F(  1,   528) ={res}    0.00
+                                                       {txt}Prob > F      = {res} 0.9473
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .35575
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .000779   .0117744     0.07   0.947    -.0223515    .0239094
+{txt}       _cons {c |}  {res} .1471493   .0245072     6.00   0.000     .0990056    .1952929
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1271 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 6
+(sum of wgt is   5.1967e+02)
+
+Linear regression                                      Number of obs ={res}     855
+                                                       {txt}F(  1,   853) ={res}   19.09
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0190
+                                                       {txt}Root MSE      = {res} .56057
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0732259   .0167602     4.37   0.000     .0403297     .106122
+{txt}       _cons {c |}  {res} .5250329    .044365    11.83   0.000     .4379556    .6121103
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 6
+(sum of wgt is   3.8600e+02)
+
+Linear regression                                      Number of obs ={res}     586
+                                                       {txt}F(  1,   584) ={res}    9.70
+                                                       {txt}Prob > F      = {res} 0.0019
+                                                       {txt}R-squared     = {res} 0.0147
+                                                       {txt}Root MSE      = {res} .57699
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .049294   .0158241     3.12   0.002     .0182149     .080373
+{txt}       _cons {c |}  {res} .3633446   .0380149     9.56   0.000     .2886821    .4380071
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 6
+(sum of wgt is   5.1967e+02)
+
+Linear regression                                      Number of obs ={res}     855
+                                                       {txt}F(  1,   853) ={res}    0.00
+                                                       {txt}Prob > F      = {res} 0.9717
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .47719
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0005061   .0142554    -0.04   0.972    -.0284859    .0274737
+{txt}       _cons {c |}  {res}   .65009   .0364763    17.82   0.000     .5784962    .7216839
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 6
+(sum of wgt is   3.8600e+02)
+
+Linear regression                                      Number of obs ={res}     586
+                                                       {txt}F(  1,   584) ={res}    0.00
+                                                       {txt}Prob > F      = {res} 0.9893
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .35538
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0001306   .0096926    -0.01   0.989    -.0191672     .018906
+{txt}       _cons {c |}  {res} .1478397   .0236842     6.24   0.000     .1013231    .1943564
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1417 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 7
+(sum of wgt is   5.7371e+02)
+
+Linear regression                                      Number of obs ={res}     898
+                                                       {txt}F(  1,   896) ={res}   25.08
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0239
+                                                       {txt}Root MSE      = {res} .55967
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0733415   .0146451     5.01   0.000     .0445988    .1020843
+{txt}       _cons {c |}  {res} .5252285   .0415029    12.66   0.000     .4437743    .6066827
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 7
+(sum of wgt is   4.2929e+02)
+
+Linear regression                                      Number of obs ={res}     689
+                                                       {txt}F(  1,   687) ={res}   16.48
+                                                       {txt}Prob > F      = {res} 0.0001
+                                                       {txt}R-squared     = {res} 0.0212
+                                                       {txt}Root MSE      = {res} .57672
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0497072   .0122433     4.06   0.000     .0256685    .0737459
+{txt}       _cons {c |}  {res} .3629507   .0362381    10.02   0.000        .2918    .4341013
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 7
+(sum of wgt is   5.7371e+02)
+
+Linear regression                                      Number of obs ={res}     898
+                                                       {txt}F(  1,   896) ={res}    0.02
+                                                       {txt}Prob > F      = {res} 0.9022
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .47737
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .001521   .0123707     0.12   0.902    -.0227579    .0257999
+{txt}       _cons {c |}  {res} .6535177   .0340747    19.18   0.000     .5866421    .7203932
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 7
+(sum of wgt is   4.2929e+02)
+
+Linear regression                                      Number of obs ={res}     689
+                                                       {txt}F(  1,   687) ={res}    0.01
+                                                       {txt}Prob > F      = {res} 0.9407
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res}  .3557
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0005604    .007535     0.07   0.941    -.0142339    .0153548
+{txt}       _cons {c |}  {res} .1471809   .0225883     6.52   0.000     .1028305    .1915313
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1618 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 8
+(sum of wgt is   6.3313e+02)
+
+Linear regression                                      Number of obs ={res}    1049
+                                                       {txt}F(  1,  1047) ={res}   44.44
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0336
+                                                       {txt}Root MSE      = {res} .55675
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0695612   .0104352     6.67   0.000     .0490849    .0900376
+{txt}       _cons {c |}  {res}  .518379    .035787    14.49   0.000     .4481566    .5886013
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 8
+(sum of wgt is   4.6800e+02)
+
+Linear regression                                      Number of obs ={res}     739
+                                                       {txt}F(  1,   737) ={res}   25.56
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0301
+                                                       {txt}Root MSE      = {res} .57721
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .053037   .0104903     5.06   0.000     .0324426    .0736313
+{txt}       _cons {c |}  {res} .3590849   .0351775    10.21   0.000     .2900249    .4281448
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 8
+(sum of wgt is   6.3313e+02)
+
+Linear regression                                      Number of obs ={res}    1049
+                                                       {txt}F(  1,  1047) ={res}    0.18
+                                                       {txt}Prob > F      = {res} 0.6710
+                                                       {txt}R-squared     = {res} 0.0001
+                                                       {txt}Root MSE      = {res} .47659
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0037271   .0087724    -0.42   0.671    -.0209405    .0134864
+{txt}       _cons {c |}  {res} .6440087   .0294205    21.89   0.000     .5862788    .7017386
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 8
+(sum of wgt is   4.6800e+02)
+
+Linear regression                                      Number of obs ={res}     739
+                                                       {txt}F(  1,   737) ={res}    0.01
+                                                       {txt}Prob > F      = {res} 0.9319
+                                                       {txt}R-squared     = {res} 0.0000
+                                                       {txt}Root MSE      = {res} .35502
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0005532   .0064708    -0.09   0.932    -.0132567    .0121502
+{txt}       _cons {c |}  {res} .1484738   .0219206     6.77   0.000     .1054396    .1915081
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(1911 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 9
+(sum of wgt is   6.9156e+02)
+
+Linear regression                                      Number of obs ={res}    1159
+                                                       {txt}F(  1,  1157) ={res}   63.47
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0416
+                                                       {txt}Root MSE      = {res} .55313
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0645844    .008107     7.97   0.000     .0486784    .0804904
+{txt}       _cons {c |}  {res} .5086634   .0325984    15.60   0.000     .4447047     .572622
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 9
+(sum of wgt is   5.1844e+02)
+
+Linear regression                                      Number of obs ={res}     922
+                                                       {txt}F(  1,   920) ={res}   51.03
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0487
+                                                       {txt}Root MSE      = {res} .57782
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0568845   .0079629     7.14   0.000     .0412569     .072512
+{txt}       _cons {c |}  {res} .3538456   .0333783    10.60   0.000     .2883392    .4193521
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 9
+(sum of wgt is   6.9156e+02)
+
+Linear regression                                      Number of obs ={res}    1159
+                                                       {txt}F(  1,  1157) ={res}    0.55
+                                                       {txt}Prob > F      = {res} 0.4586
+                                                       {txt}R-squared     = {res} 0.0004
+                                                       {txt}Root MSE      = {res} .47594
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0050846   .0068577    -0.74   0.459    -.0185396    .0083704
+{txt}       _cons {c |}  {res} .6413585   .0269532    23.80   0.000      .588476     .694241
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 9
+(sum of wgt is   5.1844e+02)
+
+Linear regression                                      Number of obs ={res}     922
+                                                       {txt}F(  1,   920) ={res}    0.61
+                                                       {txt}Prob > F      = {res} 0.4354
+                                                       {txt}R-squared     = {res} 0.0006
+                                                       {txt}Root MSE      = {res} .35863
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0038902   .0049854     0.78   0.435    -.0058939    .0136743
+{txt}       _cons {c |}  {res} .1424231   .0208082     6.84   0.000      .101586    .1832601
+{txt}{hline 13}{c BT}{hline 64}
+(3830 real changes made)
+(0 real changes made)
+(2267 real changes made)
+ Regresión talla para la edad por izquierda. Ancho de banda 10
+(sum of wgt is   7.5280e+02)
+
+Linear regression                                      Number of obs ={res}    1304
+                                                       {txt}F(  1,  1302) ={res}   88.67
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0514
+                                                       {txt}Root MSE      = {res}  .5501
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0607503   .0064515     9.42   0.000     .0480937    .0734068
+{txt}       _cons {c |}  {res} .5005813   .0302518    16.55   0.000     .4412338    .5599288
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión talla para la edad por derecha. Ancho de banda 10
+(sum of wgt is   5.7990e+02)
+
+Linear regression                                      Number of obs ={res}    1133
+                                                       {txt}F(  1,  1131) ={res}   78.75
+                                                       {txt}Prob > F      = {res} 0.0000
+                                                       {txt}R-squared     = {res} 0.0637
+                                                       {txt}Root MSE      = {res} .57817
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0554045   .0062435     8.87   0.000     .0431544    .0676547
+{txt}       _cons {c |}  {res} .3562146   .0319574    11.15   0.000     .2935121    .4189171
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por izquierda. Ancho de banda 10
+(sum of wgt is   7.5280e+02)
+
+Linear regression                                      Number of obs ={res}    1304
+                                                       {txt}F(  1,  1302) ={res}    0.60
+                                                       {txt}Prob > F      = {res} 0.4368
+                                                       {txt}R-squared     = {res} 0.0004
+                                                       {txt}Root MSE      = {res}  .4756
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0042796   .0055024    -0.78   0.437    -.0150742     .006515
+{txt}       _cons {c |}  {res} .6430555   .0251513    25.57   0.000      .593714    .6923969
+{txt}{hline 13}{c BT}{hline 64}
+ Regresión probabilidad participación por derecha. Ancho de banda 10
+(sum of wgt is   5.7990e+02)
+
+Linear regression                                      Number of obs ={res}    1133
+                                                       {txt}F(  1,  1131) ={res}    1.73
+                                                       {txt}Prob > F      = {res} 0.1892
+                                                       {txt}R-squared     = {res} 0.0015
+                                                       {txt}Root MSE      = {res} .36181
+
+{txt}{hline 13}{c TT}{hline 64}
+             {c |}               Robust
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0052108   .0039662     1.31   0.189    -.0025712    .0129928
+{txt}       _cons {c |}  {res} .1403092   .0199137     7.05   0.000     .1012371    .1793812
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. mat IL_KT[1,1]=IL[1,1]
+{txt}
+{com}. mat coln IL_KT=IL_KT
+{txt}
+{com}. mat list IL_KT
+
+{txt}IL_KT[10,1]
+         IL_KT
+ r1  {res}.17595339
+{txt} r2  {res}.17595339
+{txt} r3  {res}.33286186
+{txt} r4  {res}.37869564
+{txt} r5  {res}.33668957
+{txt} r6  {res}.32192781
+{txt} r7  {res}.32049394
+{txt} r8  {res}.32145892
+{txt} r9  {res}.31029619
+{txt}r10  {res}.28715624
+{txt}
+{com}. 
+. 
+. 
+. **** IV.Comando RD:
+. 
+. **** El comando rd es bastante fácil de manejar. Utiliza una estimación mediante regresión local polinómica
+. **** de grado uno y presenta su gráfica si uno desea observarla. Veamos un ejemplo con un ancho de banda de 4:
+. 
+. rd ha_nchs D sisben, bw(4) mbw(100) k(gau) z0(10) gr 
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}4{txt}; Local Wald Estimate: {res}.28356266
+{txt}
+{com}. 
+. **** Se especifican, en respectivo orden, la variable de resultado (ha_nchs), la variable
+. **** que indica si el individuo fue o no tratado (D) y la variable en donde que indica
+. **** el umbral de la discontinuidad (sisben). En caso de una regresión discontinua nítida no será necesario
+. **** especificar una variable de tratamiento ya que todos los individuos a la derecha del umbral
+. **** son tratados y a la izquierda no lo serán. 
+. 
+. **** En este caso estamos utilizando un kernel gaussiano. Sin embargo, la estimación se 
+. **** puede hacer con otro tipo de kernel. La opción gr nos permite ver los dos gráficos
+. **** (en la talla para la edad y en la probabilidad de participación) con su respectiva
+. **** continuidad. z0(10) nos indica que la discontinuidad se presenta en el nivel de sisben 10. 
+. **** Dado que estamos utilizando un método no paramétrico de estimación, no hay un método sencillo
+. **** para estimar los errores estándar. Por esta razón debemos hacer bootstrap.
+. 
+. **** En este caso guardaremos los resultados de la estimación del efecto del programa en el vector
+. **** RD. Los errores estándar serán almacenados en el vector EE y los estadísticos t de cada estimación en
+. **** el vector ET.
+. 
+. 
+. mat RD=J(10,1,0)
+{txt}
+{com}. mat EE=J(10,1,0)
+{txt}
+{com}. mat ET=J(10,1,0)
+{txt}
+{com}. 
+. local h=1
+{txt}
+{com}.         while `h'<=10 {c -(}
+{txt}  2{com}.         rd ha_nchs D sisben, bw(`h') mbw(100) k(gau) z0(10) 
+{txt}  3{com}.         mat define A_10=e(b)
+{txt}  4{com}.         mat RD[`h',1]=el(A_10,1,3)
+{txt}  5{com}.         bs: rd ha_nchs D sisben, bw(`h') mbw(100) k(gau) z0(10)
+{txt}  6{com}.         mat define B_10=e(se)
+{txt}  7{com}.         mat EE[`h',1]=el(B_10,1,3)
+{txt}  8{com}.         mat ET[`h',1]=el(A_10,1,3)/el(B_10,1,3)
+{txt}  9{com}. 
+. 
+. 
+. local h=`h'+1
+{txt} 10{com}. {c )-}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}1{txt}; Local Wald Estimate: {res}.34395754
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res} -.155931    .085751    -1.82   0.069    -.3239999    .0121379
+       {txt}denom {c |}  {res}-.4533437   .0727195    -6.23   0.000    -.5958713    -.310816
+       {txt}lwald {c |}  {res} .3439575   .2086428     1.65   0.099    -.0649748    .7528899
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}2{txt}; Local Wald Estimate: {res}.34049029
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1665924   .0663467    -2.51   0.012    -.2966295   -.0365553
+       {txt}denom {c |}  {res}-.4892721   .0410326   -11.92   0.000    -.5696946   -.4088497
+       {txt}lwald {c |}  {res} .3404903   .1405772     2.42   0.015      .064964    .6160166
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}3{txt}; Local Wald Estimate: {res}.30974193
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1548902   .0406909    -3.81   0.000    -.2346429   -.0751374
+       {txt}denom {c |}  {res} -.500062    .031477   -15.89   0.000    -.5617558   -.4383682
+       {txt}lwald {c |}  {res} .3097419   .0816253     3.79   0.000     .1497592    .4697246
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}4{txt}; Local Wald Estimate: {res}.28356266
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1422419   .0460501    -3.09   0.002    -.2324984   -.0519855
+       {txt}denom {c |}  {res}-.5016243    .035807   -14.01   0.000    -.5718048   -.4314438
+       {txt}lwald {c |}  {res} .2835627   .0958274     2.96   0.003     .0957444    .4713809
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}5{txt}; Local Wald Estimate: {res}.26655274
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}  -.13321    .042674    -3.12   0.002    -.2168495   -.0495705
+       {txt}denom {c |}  {res} -.499751   .0357416   -13.98   0.000    -.5698031   -.4296988
+       {txt}lwald {c |}  {res} .2665527   .0936686     2.85   0.004     .0829656    .4501399
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}6{txt}; Local Wald Estimate: {res}.25779828
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1279021   .0444826    -2.88   0.004    -.2150864   -.0407179
+       {txt}denom {c |}  {res}-.4961326   .0331146   -14.98   0.000    -.5610361   -.4312291
+       {txt}lwald {c |}  {res} .2577983   .0882145     2.92   0.003      .084901    .4306956
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}7{txt}; Local Wald Estimate: {res}.25380917
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1250389   .0417408    -3.00   0.003    -.2068493   -.0432284
+       {txt}denom {c |}  {res}-.4926491   .0303253   -16.25   0.000    -.5520857   -.4332125
+       {txt}lwald {c |}  {res} .2538092    .087553     2.90   0.004     .0822084    .4254099
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}8{txt}; Local Wald Estimate: {res}.25209334
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1235138   .0373191    -3.31   0.001    -.1966579   -.0503697
+       {txt}denom {c |}  {res}-.4899526   .0291462   -16.81   0.000    -.5470781   -.4328272
+       {txt}lwald {c |}  {res} .2520933    .076784     3.28   0.001     .1015995    .4025872
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}9{txt}; Local Wald Estimate: {res}.25139959
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1226871   .0382599    -3.21   0.001     -.197675   -.0476992
+       {txt}denom {c |}  {res}-.4880163   .0272804   -17.89   0.000    -.5414849   -.4345477
+       {txt}lwald {c |}  {res} .2513996   .0832728     3.02   0.003     .0881878    .4146113
+{txt}{hline 13}{c BT}{hline 64}
+{res}Three variables specified; jump in treatment  
+at Z=10 will be estimated. Local Wald Estimate
+is the ratio of jump in outcome to jump in treatment.
+
+ Assignment variable Z is sisben
+ Treatment variable X_T is D
+ Outcome variable y is ha_nchs
+
+Command used: {txt}lpoly{res}; Kernel used: {txt}gau
+Bandwidth: {res}10{txt}; Local Wald Estimate: {res}.25116076
+{txt}(running rd on estimation sample)
+
+Bootstrap replications ({res}50{txt})
+{hline 4}{c +}{hline 3} 1 {hline 3}{c +}{hline 3} 2 {hline 3}{c +}{hline 3} 3 {hline 3}{c +}{hline 3} 4 {hline 3}{c +}{hline 3} 5 
+..................................................    50
+{hline 13}{c TT}{hline 64}
+             {c |}              Bootstrap
+     ha_nchs {c |}      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+{hline 13}{c +}{hline 64}
+       numer {c |}  {res}-.1222282    .035409    -3.45   0.001    -.1916285   -.0528278
+       {txt}denom {c |}  {res}-.4866531   .0231389   -21.03   0.000    -.5320045   -.4413018
+       {txt}lwald {c |}  {res} .2511608   .0780315     3.22   0.001     .0982218    .4040997
+{txt}{hline 13}{c BT}{hline 64}
+
+{com}. 
+. mat coln RD=RD
+{txt}
+{com}. mat list RD
+
+{txt}RD[10,1]
+            RD
+ r1  {res}.34395754
+{txt} r2  {res}.34049029
+{txt} r3  {res}.30974193
+{txt} r4  {res}.28356266
+{txt} r5  {res}.26655274
+{txt} r6  {res}.25779828
+{txt} r7  {res}.25380917
+{txt} r8  {res}.25209334
+{txt} r9  {res}.25139959
+{txt}r10  {res}.25116076
+{txt}
+{com}. mat list EE
+
+{txt}EE[10,1]
+            c1
+ r1  {res}.20864278
+{txt} r2  {res}.14057722
+{txt} r3  {res}.08162533
+{txt} r4  {res} .0958274
+{txt} r5  {res}.09366864
+{txt} r6  {res}.08821454
+{txt} r7  {res}  .087553
+{txt} r8  {res}.07678397
+{txt} r9  {res}.08327283
+{txt}r10  {res}.07803151
+{txt}
+{com}. mat list ET
+
+{txt}ET[10,1]
+            c1
+ r1  {res}1.6485475
+{txt} r2  {res}2.4220872
+{txt} r3  {res}3.7946789
+{txt} r4  {res}2.9590979
+{txt} r5  {res}2.8456989
+{txt} r6  {res}2.9224013
+{txt} r7  {res}2.8989201
+{txt} r8  {res}3.2831505
+{txt} r9  {res}3.0189871
+{txt}r10  {res}3.2187097
+{txt}
+{com}. 
+. **** Finalmente creamos la variable EFECTO donde las columnas indican el estimador para cada programa
+. **** y las filas el ancho de banda.
+. 
+. mat EFECTO=(IL,KT,IL_KT,RD)
+{txt}
+{com}. 
+. mat list EFECTO
+
+{txt}EFECTO[10,4]
+            IL         KT      IL_KT         RD
+ r1  {res}.17595339          .  .17595339  .34395754
+{txt} r2  {res}.34070657  .18399349  .17595339  .34049029
+{txt} r3  {res} .3938328  .33286186  .33286186  .30974193
+{txt} r4  {res}.29894756  .37869564  .37869564  .28356266
+{txt} r5  {res}.30405385  .33668957  .33668957  .26655274
+{txt} r6  {res}.31775577  .32192781  .32192781  .25779828
+{txt} r7  {res}.33644205  .32049394  .32049394  .25380917
+{txt} r8  {res}.29430759  .32145892  .32145892  .25209334
+{txt} r9  {res}.24084074  .31029619  .31029619  .25139959
+{txt}r10  {res}.22008738  .28715624  .28715624  .25116076
+{txt}
+{com}. 
+. 
+. 
+. 
+. **** V. Selección de h
+. 
+. 
+. **** Como hemos visto, todas las metodologías de estimación necesitan un h especificado. 
+. **** En este punto presentamos la metodología propuesta por Imbens y Lemieux para la selección
+. **** del ancho de banda. Los valores de los Cross-validation Criteria quedarán almacenados en 
+. **** el vector CR_V para la talla para la edad y en el vector CR_V_T para el tratamiento. 
+. 
+. mat define C=J(1,10,0)
+{txt}
+{com}. mat define CR_V=J(10,1,0)
+{txt}
+{com}. 
+. **** En el siguiente programa comparamos la distancia de las observaciones frente al límite de la discontinuidad
+. **** estimado y seleccionamos el que minimice la distancia promedio. 
+. 
+. local h=1
+{txt}
+{com}. while `h'<=10 {c -(}
+{txt}  2{com}. gen cv_`h'=.
+{txt}  3{com}. 
+.         display "Ancho de banda `h'"
+{txt}  4{com}.         reg ha_nchs sisbenalin if  sisben<10 & sisben>=10-`h'
+{txt}  5{com}.         mat define A_`h'=e(b)
+{txt}  6{com}.         mat C[1,`h']=el(A_`h',1,2)
+{txt}  7{com}.         mat drop A_`h'
+{txt}  8{com}.         replace cv_`h'=(ha_nchs-el(C,1,`h'))*(ha_nchs-el(C,1,`h')) if sisben<10 & sisben>=10-`h'
+{txt}  9{com}. 
+. 
+.         display "Ancho de banda `h'"
+{txt} 10{com}.         reg ha_nchs sisbenalin if  sisben<=10+`h' & sisben>=10
+{txt} 11{com}.         mat define A_`h'=e(b)
+{txt} 12{com}.         mat C[1,`h']=el(A_`h',1,2)
+{txt} 13{com}.         mat drop A_`h'
+{txt} 14{com}.         replace cv_`h'=(ha_nchs-el(C,1,`h'))*(ha_nchs-el(C,1,`h')) if sisben<=10+`h' & sisben>=10
+{txt} 15{com}. 
+. 
+. sum cv_`h'
+{txt} 16{com}. mat CR_V[`h',1]=r(mean)
+{txt} 17{com}. drop cv_`h'
+{txt} 18{com}. local h=`h'+1
+{txt} 19{com}. {c )-}
+{txt}(4000 missing values generated)
+Ancho de banda 1
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     298
+{txt}{hline 13}{char +}{hline 30}           F(  0,   297) ={res}    0.00
+    {txt}   Model {char |} {res}          0     0           .           {txt}Prob > F      = {res}      .
+    {txt}Residual {char |} {res} 104.370944   297   .35141732           {txt}R-squared     = {res} 0.0000
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0000
+    {txt}   Total {char |} {res} 104.370944   297   .35141732           {txt}Root MSE      = {res}  .5928
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .4515047   .0343402    13.15   0.000     .3839237    .5190858
+{txt}{hline 13}{c BT}{hline 64}
+(298 real changes made)
+Ancho de banda 1
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     222
+{txt}{hline 13}{char +}{hline 30}           F(  1,   220) ={res}    0.05
+    {txt}   Model {char |} {res} .016694546     1  .016694546           {txt}Prob > F      = {res} 0.8239
+    {txt}Residual {char |} {res} 73.9519119   220  .336145054           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0043
+    {txt}   Total {char |} {res} 73.9686065   221  .334699577           {txt}Root MSE      = {res} .57978
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0204756   .0918785     0.22   0.824    -.1605989    .2015502
+{txt}       _cons {c |}  {res} .3641602   .0444671     8.19   0.000     .2765241    .4517962
+{txt}{hline 13}{c BT}{hline 64}
+(222 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_1 {c |}{res}       520    .3429705      .73954   1.72e-07   6.437418
+{txt}(4000 missing values generated)
+Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     492
+{txt}{hline 13}{char +}{hline 30}           F(  1,   490) ={res}    1.13
+    {txt}   Model {char |} {res} .367517343     1  .367517343           {txt}Prob > F      = {res} 0.2891
+    {txt}Residual {char |} {res} 159.877167   490  .326279932           {txt}R-squared     = {res} 0.0023
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0003
+    {txt}   Total {char |} {res} 160.244684   491  .326363919           {txt}Root MSE      = {res} .57121
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0559258   .0526949     1.06   0.289      -.04761    .1594617
+{txt}       _cons {c |}  {res} .5074306   .0778553     6.52   0.000     .3544591     .660402
+{txt}{hline 13}{c BT}{hline 64}
+(492 real changes made)
+Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     387
+{txt}{hline 13}{char +}{hline 30}           F(  1,   385) ={res}    3.41
+    {txt}   Model {char |} {res} 1.09905811     1  1.09905811           {txt}Prob > F      = {res} 0.0654
+    {txt}Residual {char |} {res}  123.92778   385  .321890337           {txt}R-squared     = {res} 0.0088
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0062
+    {txt}   Total {char |} {res} 125.026838   386  .323903725           {txt}Root MSE      = {res} .56735
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0572835   .0310008     1.85   0.065    -.0036686    .1182357
+{txt}       _cons {c |}  {res} .3592775   .0420492     8.54   0.000     .2766026    .4419523
+{txt}{hline 13}{c BT}{hline 64}
+(387 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_2 {c |}{res}       879    .3293521    .6909198   3.21e-08   6.724336
+{txt}(4000 missing values generated)
+Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     671
+{txt}{hline 13}{char +}{hline 30}           F(  1,   669) ={res}   12.37
+    {txt}   Model {char |} {res} 3.84203017     1  3.84203017           {txt}Prob > F      = {res} 0.0005
+    {txt}Residual {char |} {res} 207.738218   669  .310520506           {txt}R-squared     = {res} 0.0182
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0167
+    {txt}   Total {char |} {res} 211.580248   670  .315791415           {txt}Root MSE      = {res} .55724
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .091801   .0260983     3.52   0.000     .0405566    .1430455
+{txt}       _cons {c |}  {res} .5521156   .0522063    10.58   0.000     .4496076    .6546237
+{txt}{hline 13}{c BT}{hline 64}
+(671 real changes made)
+Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     421
+{txt}{hline 13}{char +}{hline 30}           F(  1,   419) ={res}    4.41
+    {txt}   Model {char |} {res} 1.47725985     1  1.47725985           {txt}Prob > F      = {res} 0.0362
+    {txt}Residual {char |} {res} 140.236497   419   .33469331           {txt}R-squared     = {res} 0.0104
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0081
+    {txt}   Total {char |} {res} 141.713757   420  .337413706           {txt}Root MSE      = {res} .57853
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0565729    .026928     2.10   0.036     .0036422    .1095036
+{txt}       _cons {c |}  {res} .3596734   .0418732     8.59   0.000     .2773656    .4419812
+{txt}{hline 13}{c BT}{hline 64}
+(421 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_3 {c |}{res}      1092    .3423631    .6908418   1.57e-08   6.958082
+{txt}(4000 missing values generated)
+Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     802
+{txt}{hline 13}{char +}{hline 30}           F(  1,   800) ={res}   16.75
+    {txt}   Model {char |} {res} 5.06878102     1  5.06878102           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 242.090252   800  .302612815           {txt}R-squared     = {res} 0.0205
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0193
+    {txt}   Total {char |} {res} 247.159033   801  .308563088           {txt}Root MSE      = {res}  .5501
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0720838   .0176128     4.09   0.000     .0375109    .1066566
+{txt}       _cons {c |}  {res} .5223306   .0430033    12.15   0.000      .437918    .6067432
+{txt}{hline 13}{c BT}{hline 64}
+(802 real changes made)
+Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     530
+{txt}{hline 13}{char +}{hline 30}           F(  1,   528) ={res}    5.62
+    {txt}   Model {char |} {res} 1.85761004     1  1.85761004           {txt}Prob > F      = {res} 0.0182
+    {txt}Residual {char |} {res} 174.647253   528  .330771312           {txt}R-squared     = {res} 0.0105
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0087
+    {txt}   Total {char |} {res} 176.504863   529  .333657586           {txt}Root MSE      = {res} .57513
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0399311   .0168499     2.37   0.018       .00683    .0730321
+{txt}       _cons {c |}  {res} .3724044   .0384655     9.68   0.000     .2968402    .4479686
+{txt}{hline 13}{c BT}{hline 64}
+(530 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_4 {c |}{res}      1332    .3348228    .6595536   8.63e-11   6.801834
+{txt}(4000 missing values generated)
+Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     855
+{txt}{hline 13}{char +}{hline 30}           F(  1,   853) ={res}   21.15
+    {txt}   Model {char |} {res} 6.52356977     1  6.52356977           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 263.142361   853  .308490458           {txt}R-squared     = {res} 0.0242
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0230
+    {txt}   Total {char |} {res} 269.665931   854  .315768069           {txt}Root MSE      = {res} .55542
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0689719   .0149986     4.60   0.000     .0395334    .0984103
+{txt}       _cons {c |}  {res} .5168933   .0400816    12.90   0.000     .4382231    .5955635
+{txt}{hline 13}{c BT}{hline 64}
+(855 real changes made)
+Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     586
+{txt}{hline 13}{char +}{hline 30}           F(  1,   584) ={res}   13.83
+    {txt}   Model {char |} {res} 4.76208687     1  4.76208687           {txt}Prob > F      = {res} 0.0002
+    {txt}Residual {char |} {res} 201.150609   584  .344435975           {txt}R-squared     = {res} 0.0231
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0215
+    {txt}   Total {char |} {res} 205.912696   585  .351987515           {txt}Root MSE      = {res} .58689
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0528542   .0142146     3.72   0.000     .0249362    .0807722
+{txt}       _cons {c |}  {res} .3586745   .0378824     9.47   0.000     .2842722    .4330768
+{txt}{hline 13}{c BT}{hline 64}
+(586 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_5 {c |}{res}      1441     .350428    .6760821   8.82e-08   6.773502
+{txt}(4000 missing values generated)
+Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     898
+{txt}{hline 13}{char +}{hline 30}           F(  1,   896) ={res}   33.43
+    {txt}   Model {char |} {res} 10.3577823     1  10.3577823           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 277.639709   896  .309865747           {txt}R-squared     = {res} 0.0360
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0349
+    {txt}   Total {char |} {res} 287.997491   897  .321067438           {txt}Root MSE      = {res} .55666
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0735289   .0127178     5.78   0.000     .0485688     .098489
+{txt}       _cons {c |}  {res} .5256127   .0371293    14.16   0.000     .4527421    .5984833
+{txt}{hline 13}{c BT}{hline 64}
+(898 real changes made)
+Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     689
+{txt}{hline 13}{char +}{hline 30}           F(  1,   687) ={res}   23.31
+    {txt}   Model {char |} {res} 7.74221584     1  7.74221584           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 228.177129   687  .332135559           {txt}R-squared     = {res} 0.0328
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0314
+    {txt}   Total {char |} {res} 235.919345   688  .342906024           {txt}Root MSE      = {res} .57631
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0501938   .0103962     4.83   0.000     .0297817     .070606
+{txt}       _cons {c |}  {res} .3621642   .0351361    10.31   0.000     .2931772    .4311512
+{txt}{hline 13}{c BT}{hline 64}
+(689 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_6 {c |}{res}      1587    .3572943    .6677701   1.66e-07   6.818964
+{txt}(4000 missing values generated)
+Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1049
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1047) ={res}   65.21
+    {txt}   Model {char |} {res} 19.4116723     1  19.4116723           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 311.687555  1047   .29769585           {txt}R-squared     = {res} 0.0586
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0577
+    {txt}   Total {char |} {res} 331.099227  1048  .315934377           {txt}Root MSE      = {res} .54562
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0656707   .0081325     8.08   0.000     .0497127    .0816286
+{txt}       _cons {c |}  {res} .5094971   .0308071    16.54   0.000     .4490465    .5699477
+{txt}{hline 13}{c BT}{hline 64}
+(1049 real changes made)
+Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     739
+{txt}{hline 13}{char +}{hline 30}           F(  1,   737) ={res}   40.91
+    {txt}   Model {char |} {res}  13.719546     1   13.719546           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 247.173005   737  .335377211           {txt}R-squared     = {res} 0.0526
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0513
+    {txt}   Total {char |} {res} 260.892551   738  .353512941           {txt}Root MSE      = {res} .57912
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0588621   .0092031     6.40   0.000     .0407948    .0769295
+{txt}       _cons {c |}  {res} .3481565   .0343914    10.12   0.000     .2806396    .4156734
+{txt}{hline 13}{c BT}{hline 64}
+(739 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_7 {c |}{res}      1788    .3688674    .6829928   3.66e-08    7.27799
+{txt}(4000 missing values generated)
+Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1159
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1157) ={res}   79.72
+    {txt}   Model {char |} {res} 22.9665275     1  22.9665275           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 333.314632  1157  .288085248           {txt}R-squared     = {res} 0.0645
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0637
+    {txt}   Total {char |} {res} 356.281159  1158  .307669395           {txt}Root MSE      = {res} .53674
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .058021   .0064983     8.93   0.000     .0452713    .0707707
+{txt}       _cons {c |}  {res} .4920335   .0283716    17.34   0.000      .436368    .5476991
+{txt}{hline 13}{c BT}{hline 64}
+(1159 real changes made)
+Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     922
+{txt}{hline 13}{char +}{hline 30}           F(  1,   920) ={res}   87.38
+    {txt}   Model {char |} {res} 29.4434033     1  29.4434033           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 309.994069   920  .336950075           {txt}R-squared     = {res} 0.0867
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0857
+    {txt}   Total {char |} {res} 339.437472   921  .368553173           {txt}Root MSE      = {res} .58047
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0617385   .0066046     9.35   0.000     .0487767    .0747003
+{txt}       _cons {c |}  {res} .3427602   .0322854    10.62   0.000     .2793986    .4061218
+{txt}{hline 13}{c BT}{hline 64}
+(922 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_8 {c |}{res}      2081     .385229    .7121375   8.85e-11   8.344787
+{txt}(4000 missing values generated)
+Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1304
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1302) ={res}  112.06
+    {txt}   Model {char |} {res} 32.0937719     1  32.0937719           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res}  372.89084  1302  .286398494           {txt}R-squared     = {res} 0.0792
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0785
+    {txt}   Total {char |} {res} 404.984612  1303  .310809372           {txt}Root MSE      = {res} .53516
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0551842    .005213    10.59   0.000     .0449573     .065411
+{txt}       _cons {c |}  {res} .4848458   .0265554    18.26   0.000     .4327497    .5369419
+{txt}{hline 13}{c BT}{hline 64}
+(1304 real changes made)
+Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1133
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1131) ={res}  102.81
+    {txt}   Model {char |} {res} 34.5838942     1  34.5838942           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 380.447547  1131  .336381562           {txt}R-squared     = {res} 0.0833
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0825
+    {txt}   Total {char |} {res} 415.031441  1132  .366635549           {txt}Root MSE      = {res} .57998
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}  .053413   .0052678    10.14   0.000     .0430773    .0637487
+{txt}       _cons {c |}  {res} .3617736   .0309548    11.69   0.000     .3010384    .4225088
+{txt}{hline 13}{c BT}{hline 64}
+(1133 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+        cv_9 {c |}{res}      2437    .3972101    .7302243   2.79e-07   8.235299
+{txt}(4000 missing values generated)
+Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1426
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1424) ={res}  132.70
+    {txt}   Model {char |} {res} 38.2117573     1  38.2117573           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res}  410.03505  1424  .287945962           {txt}R-squared     = {res} 0.0852
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0846
+    {txt}   Total {char |} {res} 448.246807  1425  .314559163           {txt}Root MSE      = {res} .53661
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0517709   .0044941    11.52   0.000     .0429551    .0605867
+{txt}       _cons {c |}  {res} .4751963   .0255353    18.61   0.000     .4251054    .5252871
+{txt}{hline 13}{c BT}{hline 64}
+(1426 real changes made)
+Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1189
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1187) ={res}  111.07
+    {txt}   Model {char |} {res}  37.397105     1   37.397105           {txt}Prob > F      = {res} 0.0000
+    {txt}Residual {char |} {res} 399.658529  1187  .336696317           {txt}R-squared     = {res} 0.0856
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0848
+    {txt}   Total {char |} {res} 437.055634  1188  .367891947           {txt}Root MSE      = {res} .58026
+
+{txt}{hline 13}{c TT}{hline 64}
+     ha_nchs {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0525932   .0049903    10.54   0.000     .0428023     .062384
+{txt}       _cons {c |}  {res}  .364062   .0306058    11.90   0.000     .3040144    .4241096
+{txt}{hline 13}{c BT}{hline 64}
+(1189 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+       cv_10 {c |}{res}      2615    .4041268      .73193   1.29e-08    8.22217
+{txt}
+{com}. 
+. mat list CR_V
+
+{txt}CR_V[10,1]
+            c1
+ r1  {res}.34297049
+{txt} r2  {res}.32935205
+{txt} r3  {res}.34236307
+{txt} r4  {res}.33482275
+{txt} r5  {res}  .350428
+{txt} r6  {res}.35729426
+{txt} r7  {res} .3688674
+{txt} r8  {res}.38522897
+{txt} r9  {res} .3972101
+{txt}r10  {res}.40412679
+{txt}
+{com}. 
+. 
+. **** Ahora hacemos este mismo procedimiento para la probabilidad de tratamiento y evaluamos
+. **** qué nivel de ancho de banda reporta el menor Cross Validation Criteria. 
+. 
+. 
+. mat define C_T=J(1,10,0)
+{txt}
+{com}. mat define CR_V_T=J(10,1,0)
+{txt}
+{com}. 
+. 
+. local h=1
+{txt}
+{com}. while `h'<=10 {c -(}
+{txt}  2{com}. gen cv_t_`h'=.
+{txt}  3{com}. 
+.         display "Ancho de banda `h'"
+{txt}  4{com}.         reg D sisbenalin if  sisben<10 & sisben>=10-`h'
+{txt}  5{com}.         mat define A_`h'=e(b)
+{txt}  6{com}.         mat C_T[1,`h']=el(A_`h',1,2)
+{txt}  7{com}.         mat drop A_`h'
+{txt}  8{com}.         replace cv_t_`h'=(D-el(C_T,1,`h'))*(D-el(C_T,1,`h')) if sisben<10 & sisben>=10-`h'
+{txt}  9{com}. 
+. 
+.         display "Ancho de banda `h'"
+{txt} 10{com}.         reg D sisbenalin if  sisben<=10+`h' & sisben>=10
+{txt} 11{com}.         mat define A_`h'=e(b)
+{txt} 12{com}.         mat C_T[1,`h']=el(A_`h',1,2)
+{txt} 13{com}.         mat drop A_`h'
+{txt} 14{com}.         replace cv_t_`h'=(D-el(C_T,1,`h'))*(D-el(C_T,1,`h')) if sisben<=10+`h' & sisben>=10
+{txt} 15{com}. 
+. 
+. sum cv_t_`h'
+{txt} 16{com}. mat CR_V_T[`h',1]=r(mean)
+{txt} 17{com}. drop cv_t_`h'
+{txt} 18{com}. local h=`h'+1
+{txt} 19{com}. {c )-}
+{txt}(4000 missing values generated)
+Ancho de banda 1
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     298
+{txt}{hline 13}{char +}{hline 30}           F(  0,   297) ={res}    0.00
+    {txt}   Model {char |} {res}          0     0           .           {txt}Prob > F      = {res}      .
+    {txt}Residual {char |} {res} 68.8590604   297  .231848688           {txt}R-squared     = {res} 0.0000
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0000
+    {txt}   Total {char |} {res} 68.8590604   297  .231848688           {txt}Root MSE      = {res} .48151
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}(dropped)
+{txt}       _cons {c |}  {res} .6375839   .0278929    22.86   0.000     .5826911    .6924767
+{txt}{hline 13}{c BT}{hline 64}
+(298 real changes made)
+Ancho de banda 1
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     222
+{txt}{hline 13}{char +}{hline 30}           F(  1,   220) ={res}    2.36
+    {txt}   Model {char |} {res} .319628226     1  .319628226           {txt}Prob > F      = {res} 0.1262
+    {txt}Residual {char |} {res} 29.8425339   220  .135647882           {txt}R-squared     = {res} 0.0106
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0061
+    {txt}   Total {char |} {res} 30.1621622   221  .136480372           {txt}Root MSE      = {res}  .3683
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0895928   .0583656     1.54   0.126    -.0254345      .20462
+{txt}       _cons {c |}  {res} .1411765   .0282476     5.00   0.000     .0855059    .1968471
+{txt}{hline 13}{c BT}{hline 64}
+(222 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_1 {c |}{res}       520    .1906134    .2053728   .0199308   .7375779
+{txt}(4000 missing values generated)
+Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     492
+{txt}{hline 13}{char +}{hline 30}           F(  1,   490) ={res}    1.20
+    {txt}   Model {char |} {res}  .27053896     1   .27053896           {txt}Prob > F      = {res} 0.2743
+    {txt}Residual {char |} {res} 110.678648   490  .225874792           {txt}R-squared     = {res} 0.0024
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0004
+    {txt}   Total {char |} {res} 110.949187   491  .225965758           {txt}Root MSE      = {res} .47526
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0479831   .0438437    -1.09   0.274     -.134128    .0381618
+{txt}       _cons {c |}  {res} .5896008   .0647779     9.10   0.000      .462324    .7168775
+{txt}{hline 13}{c BT}{hline 64}
+(492 real changes made)
+Ancho de banda 2
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     387
+{txt}{hline 13}{char +}{hline 30}           F(  1,   385) ={res}    0.45
+    {txt}   Model {char |} {res} .054932984     1  .054932984           {txt}Prob > F      = {res} 0.5033
+    {txt}Residual {char |} {res} 47.1285295   385  .122411765           {txt}R-squared     = {res} 0.0012
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0014
+    {txt}   Total {char |} {res} 47.1834625   386   .12223695           {txt}Root MSE      = {res} .34987
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0128067   .0191175    -0.67   0.503    -.0503944    .0247811
+{txt}       _cons {c |}  {res} .1547601   .0259308     5.97   0.000     .1037764    .2057437
+{txt}{hline 13}{c BT}{hline 64}
+(387 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_2 {c |}{res}       879    .1824763    .1804204   .0239507   .7144306
+{txt}(4000 missing values generated)
+Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     671
+{txt}{hline 13}{char +}{hline 30}           F(  1,   669) ={res}    0.14
+    {txt}   Model {char |} {res}  .03260486     1   .03260486           {txt}Prob > F      = {res} 0.7047
+    {txt}Residual {char |} {res}  151.75279   669  .226835262           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0013
+    {txt}   Total {char |} {res} 151.785395   670  .226545366           {txt}Root MSE      = {res} .47627
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0084568    .022306    -0.38   0.705    -.0522551    .0353414
+{txt}       _cons {c |}  {res} .6388335   .0446204    14.32   0.000     .5512206    .7264464
+{txt}{hline 13}{c BT}{hline 64}
+(671 real changes made)
+Ancho de banda 3
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     421
+{txt}{hline 13}{char +}{hline 30}           F(  1,   419) ={res}    0.08
+    {txt}   Model {char |} {res} .009813229     1  .009813229           {txt}Prob > F      = {res} 0.7790
+    {txt}Residual {char |} {res}  52.151707   419  .124467081           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0022
+    {txt}   Total {char |} {res} 52.1615202   420  .124194096           {txt}Root MSE      = {res}  .3528
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0046109   .0164213    -0.28   0.779    -.0368893    .0276675
+{txt}       _cons {c |}  {res}  .150194   .0255353     5.88   0.000     .1000008    .2003872
+{txt}{hline 13}{c BT}{hline 64}
+(421 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_3 {c |}{res}      1092    .1869214    .1913629   .0225582   .7221702
+{txt}(4000 missing values generated)
+Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     802
+{txt}{hline 13}{char +}{hline 30}           F(  1,   800) ={res}    0.09
+    {txt}   Model {char |} {res} .019758544     1  .019758544           {txt}Prob > F      = {res} 0.7679
+    {txt}Residual {char |} {res} 181.308172   800  .226635215           {txt}R-squared     = {res} 0.0001
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0011
+    {txt}   Total {char |} {res}  181.32793   801  .226376942           {txt}Root MSE      = {res} .47606
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0045005   .0152423    -0.30   0.768    -.0344201     .025419
+{txt}       _cons {c |}  {res}   .64481   .0372153    17.33   0.000     .5717588    .7178611
+{txt}{hline 13}{c BT}{hline 64}
+(802 real changes made)
+Ancho de banda 4
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     530
+{txt}{hline 13}{char +}{hline 30}           F(  1,   528) ={res}    0.18
+    {txt}   Model {char |} {res}  .02260753     1   .02260753           {txt}Prob > F      = {res} 0.6752
+    {txt}Residual {char |} {res} 67.9019208   528  .128602123           {txt}R-squared     = {res} 0.0003
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0016
+    {txt}   Total {char |} {res} 67.9245283   529  .128401755           {txt}Root MSE      = {res} .35861
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0044051   .0105065     0.42   0.675    -.0162345    .0250448
+{txt}       _cons {c |}  {res} .1432967   .0239845     5.97   0.000     .0961799    .1904136
+{txt}{hline 13}{c BT}{hline 64}
+(530 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_4 {c |}{res}      1332    .1872076    .1992528    .020534   .7339405
+{txt}(4000 missing values generated)
+Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     855
+{txt}{hline 13}{char +}{hline 30}           F(  1,   853) ={res}    0.57
+    {txt}   Model {char |} {res} .129548116     1  .129548116           {txt}Prob > F      = {res} 0.4520
+    {txt}Residual {char |} {res} 195.199107   853  .228838343           {txt}R-squared     = {res} 0.0007
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0005
+    {txt}   Total {char |} {res} 195.328655   854  .228722078           {txt}Root MSE      = {res} .47837
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0097195    .012918     0.75   0.452    -.0156352    .0350742
+{txt}       _cons {c |}  {res} .6696558   .0345214    19.40   0.000     .6018988    .7374127
+{txt}{hline 13}{c BT}{hline 64}
+(855 real changes made)
+Ancho de banda 5
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     586
+{txt}{hline 13}{char +}{hline 30}           F(  1,   584) ={res}    0.02
+    {txt}   Model {char |} {res} .002609777     1  .002609777           {txt}Prob > F      = {res} 0.8855
+    {txt}Residual {char |} {res} 73.3762298   584  .125644229           {txt}R-squared     = {res} 0.0000
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0017
+    {txt}   Total {char |} {res} 73.3788396   585  .125433914           {txt}Root MSE      = {res} .35446
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0012373   .0085852    -0.14   0.885     -.018099    .0156244
+{txt}       _cons {c |}  {res} .1492914   .0228799     6.53   0.000     .1043545    .1942284
+{txt}{hline 13}{c BT}{hline 64}
+(586 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_5 {c |}{res}      1441    .1867859    .2080543   .0222879   .7237051
+{txt}(4000 missing values generated)
+Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     898
+{txt}{hline 13}{char +}{hline 30}           F(  1,   896) ={res}    0.19
+    {txt}   Model {char |} {res} .044205557     1  .044205557           {txt}Prob > F      = {res} 0.6602
+    {txt}Residual {char |} {res} 204.757576   896  .228524081           {txt}R-squared     = {res} 0.0002
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0009
+    {txt}   Total {char |} {res} 204.801782   897  .228318597           {txt}Root MSE      = {res} .47804
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0048036   .0109217     0.44   0.660    -.0166315    .0262387
+{txt}       _cons {c |}  {res} .6602495   .0318857    20.71   0.000     .5976701     .722829
+{txt}{hline 13}{c BT}{hline 64}
+(898 real changes made)
+Ancho de banda 6
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     689
+{txt}{hline 13}{char +}{hline 30}           F(  1,   687) ={res}    0.05
+    {txt}   Model {char |} {res} .005804745     1  .005804745           {txt}Prob > F      = {res} 0.8311
+    {txt}Residual {char |} {res} 87.5965175   687  .127505848           {txt}R-squared     = {res} 0.0001
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0014
+    {txt}   Total {char |} {res} 87.6023222   688  .127328957           {txt}Root MSE      = {res} .35708
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0013744   .0064414     0.21   0.831    -.0112729    .0140217
+{txt}       _cons {c |}  {res} .1458655   .0217701     6.70   0.000     .1031216    .1886095
+{txt}{hline 13}{c BT}{hline 64}
+(689 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_6 {c |}{res}      1587    .1843387    .2085254   .0212768   .7295457
+{txt}(4000 missing values generated)
+Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1049
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1047) ={res}    1.67
+    {txt}   Model {char |} {res} .375045195     1  .375045195           {txt}Prob > F      = {res} 0.1962
+    {txt}Residual {char |} {res}  234.80894  1047  .224268328           {txt}R-squared     = {res} 0.0016
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0006
+    {txt}   Total {char |} {res} 235.183985  1048  .224412199           {txt}Root MSE      = {res} .47357
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0091281   .0070587    -1.29   0.196    -.0229789    .0047227
+{txt}       _cons {c |}  {res} .6316785   .0267392    23.62   0.000       .57921    .6841469
+{txt}{hline 13}{c BT}{hline 64}
+(1049 real changes made)
+Ancho de banda 7
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     739
+{txt}{hline 13}{char +}{hline 30}           F(  1,   737) ={res}    0.20
+    {txt}   Model {char |} {res} .024777952     1  .024777952           {txt}Prob > F      = {res} 0.6552
+    {txt}Residual {char |} {res} 91.4826645   737  .124128446           {txt}R-squared     = {res} 0.0003
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0011
+    {txt}   Total {char |} {res} 91.5074425   738  .123993825           {txt}Root MSE      = {res} .35232
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0025015   .0055989    -0.45   0.655    -.0134932    .0084902
+{txt}       _cons {c |}  {res} .1521289   .0209228     7.27   0.000     .1110535    .1932042
+{txt}{hline 13}{c BT}{hline 64}
+(739 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_7 {c |}{res}      1788    .1832273    .1907822   .0231432   .7188855
+{txt}(4000 missing values generated)
+Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1159
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1157) ={res}    1.44
+    {txt}   Model {char |} {res} .322453523     1  .322453523           {txt}Prob > F      = {res} 0.2304
+    {txt}Residual {char |} {res} 259.094285  1157  .223936288           {txt}R-squared     = {res} 0.0012
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0004
+    {txt}   Total {char |} {res} 259.416739  1158  .224021363           {txt}Root MSE      = {res} .47322
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} -.006875   .0057293    -1.20   0.230    -.0181159     .004366
+{txt}       _cons {c |}  {res} .6368222   .0250141    25.46   0.000     .5877441    .6859004
+{txt}{hline 13}{c BT}{hline 64}
+(1159 real changes made)
+Ancho de banda 8
+
+      Source {c |}       SS       df       MS              Number of obs ={res}     922
+{txt}{hline 13}{char +}{hline 30}           F(  1,   920) ={res}    5.02
+    {txt}   Model {char |} {res} .696573089     1  .696573089           {txt}Prob > F      = {res} 0.0252
+    {txt}Residual {char |} {res} 127.581084   920  .138675091           {txt}R-squared     = {res} 0.0054
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0043
+    {txt}   Total {char |} {res} 128.277657   921  .139280844           {txt}Root MSE      = {res} .37239
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0094961    .004237     2.24   0.025     .0011807    .0178115
+{txt}       _cons {c |}  {res} .1296206    .020712     6.26   0.000     .0889722    .1702689
+{txt}{hline 13}{c BT}{hline 64}
+(922 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_8 {c |}{res}      2081    .1872688    .2119404   .0168015   .7575604
+{txt}(4000 missing values generated)
+Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1304
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1302) ={res}    0.45
+    {txt}   Model {char |} {res} .101992003     1  .101992003           {txt}Prob > F      = {res} 0.5007
+    {txt}Residual {char |} {res} 292.720094  1302  .224823421           {txt}R-squared     = {res} 0.0003
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res}-0.0004
+    {txt}   Total {char |} {res} 292.822086  1303  .224729153           {txt}Root MSE      = {res} .47416
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0031109   .0046188    -0.67   0.501    -.0121719    .0059501
+{txt}       _cons {c |}  {res} .6463594   .0235282    27.47   0.000     .6002021    .6925167
+{txt}{hline 13}{c BT}{hline 64}
+(1304 real changes made)
+Ancho de banda 9
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1133
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1131) ={res}    4.21
+    {txt}   Model {char |} {res} .591926322     1  .591926322           {txt}Prob > F      = {res} 0.0403
+    {txt}Residual {char |} {res} 158.871445  1131   .14046989           {txt}R-squared     = {res} 0.0037
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0028
+    {txt}   Total {char |} {res} 159.463372  1132  .140868703           {txt}Root MSE      = {res} .37479
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0069879   .0034041     2.05   0.040     .0003088    .0136669
+{txt}       _cons {c |}  {res} .1353488   .0200034     6.77   0.000     .0961009    .1745966
+{txt}{hline 13}{c BT}{hline 64}
+(1133 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+      cv_t_9 {c |}{res}      2437    .1862246    .2163897   .0183193   .7476217
+{txt}(4000 missing values generated)
+Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1426
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1424) ={res}    1.42
+    {txt}   Model {char |} {res} .317784719     1  .317784719           {txt}Prob > F      = {res} 0.2329
+    {txt}Residual {char |} {res} 317.783898  1424   .22316285           {txt}R-squared     = {res} 0.0010
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0003
+    {txt}   Total {char |} {res} 318.101683  1425  .223229251           {txt}Root MSE      = {res}  .4724
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res}-.0047212   .0039564    -1.19   0.233    -.0124822    .0030397
+{txt}       _cons {c |}  {res}  .641807     .02248    28.55   0.000     .5977095    .6859045
+{txt}{hline 13}{c BT}{hline 64}
+(1426 real changes made)
+Ancho de banda 10
+
+      Source {c |}       SS       df       MS              Number of obs ={res}    1189
+{txt}{hline 13}{char +}{hline 30}           F(  1,  1187) ={res}    3.99
+    {txt}   Model {char |} {res} .562359119     1  .562359119           {txt}Prob > F      = {res} 0.0459
+    {txt}Residual {char |} {res} 167.119727  1187  .140791682           {txt}R-squared     = {res} 0.0034
+{txt}{hline 13}{char +}{hline 30}           Adj R-squared = {res} 0.0025
+    {txt}   Total {char |} {res} 167.682086  1188  .141146537           {txt}Root MSE      = {res} .37522
+
+{txt}{hline 13}{c TT}{hline 64}
+           D {c |}      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+{hline 13}{char +}{hline 64}
+  sisbenalin {c |}  {res} .0064494    .003227     2.00   0.046     .0001181    .0127806
+{txt}       _cons {c |}  {res} .1368519   .0197913     6.91   0.000     .0980221    .1756816
+{txt}{hline 13}{c BT}{hline 64}
+(1189 real changes made)
+
+    Variable {c |}       Obs        Mean    Std. Dev.       Min        Max
+{hline 13}{c +}{hline 56}
+     cv_t_10 {c |}{res}      2615    .1865354     .212773   .0187284   .7450247
+{txt}
+{com}. 
+. mat list CR_V_T
+
+{txt}CR_V_T[10,1]
+            c1
+ r1  {res}.19061344
+{txt} r2  {res}.18247635
+{txt} r3  {res} .1869214
+{txt} r4  {res} .1872076
+{txt} r5  {res}.18678594
+{txt} r6  {res}.18433873
+{txt} r7  {res}.18322732
+{txt} r8  {res}.18726879
+{txt} r9  {res}.18622462
+{txt}r10  {res}.18653538
+{txt}
+{com}. mat list CR_V
+
+{txt}CR_V[10,1]
+            c1
+ r1  {res}.34297049
+{txt} r2  {res}.32935205
+{txt} r3  {res}.34236307
+{txt} r4  {res}.33482275
+{txt} r5  {res}  .350428
+{txt} r6  {res}.35729426
+{txt} r7  {res} .3688674
+{txt} r8  {res}.38522897
+{txt} r9  {res} .3972101
+{txt}r10  {res}.40412679
+{txt}
+{com}. 
+. 
+. **** Podemos ver que en ambos casos el "Cross Validation Criteria"
+. **** nos indica que lo óptimo es utilizar un ancho de banda de 2. 
+. **** Ahora veamos cual es el nivel de ancho de banda que minimiza
+. **** el Cross Validation Criteria para el tratamiento. 
+. 
+{txt}end of do-file
+
+{com}. log close
+       {txt}log:  {res}F:\EdeI\Archivos para entregar\Bases de datos\Regresión discontinua\discontinuity_log-file.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res} 3 Sep 2009, 11:33:17
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}
