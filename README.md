@@ -1,2 +1,2 @@
-# samplecode
-This folder includes sample codes in different languages. 
+# Sample code
+This repository contains sample codes in different languages
