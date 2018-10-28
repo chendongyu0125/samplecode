@@ -1,37 +1,63 @@
-#EDITS:
-#I. 09-08-2015. Disable time calculation and allow larger matrices.
-#Additionally, perform queries exclusively on those schools within a given range
-#of distance.
+
 
 
 #------------------------------------------------------------------------------
-#Rodrigo Azuero Melo rodazuero@gmail.com
-#08-10-2015
+#Author: Rodrigo Azuero Melo rodazuero@gmail.com
+#Initial version: 08-10-2015
+#Latest version: 04-20-2018
 #------------------------------------------------------------------------------
-#SUMMARY: In this file we will generate a csv file with the distance in car
-#to travel from one school to each other school in the sample. The file needs to
-#stop 10 seconds every 100 queries as it is the established limit.
-#------------------------------------------------------------------------------
-#PREVIOUS STEPS: Before running the following .py file it is necessary to have
-#google key for the google matrix.distance API. The description of the steps are
-#found in https://developers.google.com/maps/documentation/distancematrix/intro
-#Once you follow those steps, you will get a key. Such key can only be used in
-#a predetermined IP address. You need to store the key in the line where
-#the command gmaps=Client is.
-#------------------------------------------------------------------------------
-#INPUTS: It is necessary to have a CSV file stored in Windows with the coordinates
-#of the schools. There should be five columns. The first column includes
-#only the number of the school (AMIE). The second column
+#Description: This file uses the Google Maps Distance Matrix API
+# to compute the distance(s) and time(s) between two points or two 
+# vectors of points. An API key is necessary to perform the query.
+# Google maps must be able to find both the origin and the destination 
+# in order for the function to run. If the origin or destination contains 
+# multiple words, they should be separated by a plus sign (+). 
+# The distance is returned in meters and the time in seconds.
+# Four different modes of transportation are allowed: bicycling, walking, driving, transit.
+
+#It is necessary to have a CSV file with the coordinates
+#of the points. There should be five columns. The first column includes
+#only the number of the point. The second column
 #includes the Latitude. The third column includes the longitude. The
-#fourth and fifth columns should include UTM coordinates.
+#fourth and fifth columns should include UTM coordinates. 
 #The first row of the CSV file should include the names of the variables
 #(Number,LAT,LON,xutm,yutm) with no quotes. Example:
 #[Number, LAT, LON,xUTM,yUTM]
 #[1, -4.0010175704956, -79.2003021240234,1234,5678]
+
+# As an example, we will use a csv file with four different locations in Ecuador
+# and we will compute all the 6 different possibilities of travel time between
+# the four points as there are 6 are all the possible combinations between four points
+# 6=4x(4-1)/2. These are:
+# point1-point2; point1-point3; point1-point4; point2-point3;
+# point2-point4; point3-point4.
+
+#The output will be a csv file called DISTANCEFINAL.csv.
+
+#------------------------------------------------------------------------------
+#PREVIOUS STEPS: Before running this file it is necessary to have a
+#google key for the google matrix.distance API. The description of the steps are
+#found in https://developers.google.com/maps/documentation/distancematrix/intro
+#Once you follow those steps, you will get a key. Such key can only be used in
+#a predetermined IP address. You need to store the key in the line where
+#the command gmaps=Client is. This is defined in the block of parameter definitions.
+
+#It is also necessary to install the GoogleMaps package via pip. This is done
+#simply executing the command 'pip install GoogleMaps' 
 #------------------------------------------------------------------------------
 #OUTPUT: a CSV file containing a  matrix with distances.
 #File called "distances.csv". N*N matrix with N*(N+1)/2 entries as is symmetric.
 #------------------------------------------------------------------------------
+#EDITS:
+#I. 09-08-2015. Disable time calculation and allow larger matrices.
+#Additionally, perform queries exclusively on those schools within a given range
+#of distance. 
+
+# 04-20-2018. It is necessary to install the googlemaps package
+#before running the file. This is done in a mac traditionally as
+#pip install GoogleMaps 
+
+
 
 #-----------------------------------------------------------------
 #0. Block of package loading
@@ -46,31 +72,38 @@ import os
 #0.4 Client package from google maps used to query distances
 from googlemaps import Client
 #0.5 Import numpy
-import numpy as np
+import numpy as np 
 #-----------------------------------------------------------------
-
+#Block of parameter definition. 
 #-----------------------------------------------------------------
 #1. Change directory
-os.chdir('/Users/rodrigoazuero/Documents/DATAIDB2015/Clusters/FinalFiles/Python/Cluster8')
+os.chdir('/Users/rodrigoazuero/Dropbox/gmapsdistance/gmapsdistancePython')
 #-----------------------------------------------------------------
 
 #-----------------------------------------------------------------
 #2. Store the API key in the following variables
-gmaps=Client('INSTERT-KEY-HERE')
-gmaps=Client(key='INSTERT-KEY-HERE')
+gmaps=Client('AIzaSyB2GpMeRX8FHzz0aVZApbnF8_wlw88eBK0')
+gmaps=Client(key='AIzaSyB2GpMeRX8FHzz0aVZApbnF8_wlw88eBK0')
 
 #-----------------------------------------------------------------
 
 #-----------------------------------------------------------------
 #3. Matrix definitions for distances. We need to replace
 #the values with the corresponding rank for the matrices.
-drivedistance= np.empty((10000,10000), dtype=np.object)
-walkdistance= np.empty((10000,10000), dtype=np.object)
+DISTANCEFINAL= np.empty((10000,10000), dtype=np.object)
+
 
 #3.1 Define the threshold variable. I will compute the google maps query exclusively
 #for those schools within the value of threshold
 threshold=10
 
+
+#3.2. Chose one of the four different modes of transportation 
+# allowed: bicycling, walking, driving, transit
+MODE='walking'
+
+#3.3. For this example, the file used as input will be called 
+#"Cluster8INPUTLIMITED.csv". 
 #-----------------------------------------------------------------
 
 #-----------------------------------------------------------------
@@ -90,14 +123,14 @@ j=0
 #-----------------------------------------------------------------
 #5. Calculating distance in a loop
 #5.0 Open the 'MockDatA.csv' file.
-with open('Cluster8INPUT.csv') as csvfile:
+with open('Cluster8INPUTLIMITED.csv') as csvfile:
     reader=csv.reader(csvfile)
     #5.1 Iterating rows in the file. Start reading from row zero
     for row in reader:
         #5.2 We will skip the first row as it contains names of variables
         amie=row[0]
-        walkdistance[i][0]=amie
-        walkdistance[0][i]=amie
+        DISTANCEFINAL[i][0]=amie
+        DISTANCEFINAL[0][i]=amie
         i=i+1
         j=0
         if i>1:
@@ -110,7 +143,7 @@ with open('Cluster8INPUT.csv') as csvfile:
             print(amie)
             #5.4. Generate compound coordinate as (x,y).
             coordORIG=xcoord, ycord
-            with open('Cluster8INPUT.csv') as csvfile2:
+            with open('Cluster8INPUTLIMITED.csv') as csvfile2:
                 reader2=csv.reader(csvfile2)
                 #5.5 Iterating rows for the second time. Procedure repeated.
                 for row2 in reader2:
@@ -137,7 +170,7 @@ with open('Cluster8INPUT.csv') as csvfile:
                                 #5.7. Every 100 queries we sleep for 10 seconds.
                                 time.sleep(10)
                             #5.8 Walking distance.
-                            algoprueba=gmaps.distance_matrix(coordORIG,coordCOMP,mode='walking')
+                            algoprueba=gmaps.distance_matrix(coordORIG,coordCOMP,mode=MODE)
                             #5.9 Driving distance stored in a set of dictionaries and lists.
                             #We need to extract it in seven steps.
                             algo2=algoprueba['rows']
@@ -154,17 +187,17 @@ with open('Cluster8INPUT.csv') as csvfile:
                                 #5.10 Just to verify, it is being computed nice.
                                 print(algo7)
                             #5.11 Store  distance
-                            walkdistance[i-1][j-1]=algo7
+                            DISTANCEFINAL[i-1][j-1]=algo7
                             print countdistance
                         else:
-                            walkdistance[i-1][j-1]='FAR'
+                            DISTANCEFINAL[i-1][j-1]='FAR'
 
 #-----------------------------------------------------------------
 #6.Store the tables as csv
 #6.0 Store the driving distance table
-with open('walkdistance.csv', 'wb') as f:
+with open('DISTANCEFINAL.csv', 'wb') as f:
     writer = csv.writer(f)
-    writer.writerows(walkdistance)
+    writer.writerows(DISTANCEFINAL)
 
 #-----------------------------------------------------------------
 #7. Verify the file ran smoothly
